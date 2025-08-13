@@ -727,9 +727,74 @@
     }
 
     databaseURL: "https://box-il-default-rtdb.firebaseio.com",
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ארנק משותף</title>
+</head>
+<body>
+  <h2>הוספת רשומה</h2>
+  <form id="f">
+    <input id="cat" placeholder="קטגוריה" required>
+    <input id="amt" type="number" placeholder="סכום" required>
+    <input id="note" placeholder="הערה">
+    <button>שמירה</button>
+  </form>
+
+  <h2>רשומות</h2>
+  <div id="list">טוען…</div>
+
+  <!-- Firebase compat SDKs (בלי build, עובד ישר ב-GitHub Pages) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+  <script>
+    // ===== ההגדרות שלך (עם databaseURL הנכון!) =====
+    const firebaseConfig = {
+      apiKey: "AIzaSyCIz_RgFpXa9vlAku7_9V3iKxasZbMn-XI",
+      authDomain: "box-il.firebaseapp.com",
+      databaseURL: "https://box-il-default-rtdb.firebaseio.com",
+      projectId: "box-il",
+      storageBucket: "box-il.firebasestorage.app",
+      messagingSenderId: "935297190111",
+      appId: "1:935297190111:web:403c15cc7e6fa45e99416a",
+      measurementId: "G-H8Z38B2W04"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // שמירה: שליחת טופס
+    document.getElementById('f').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const data = {
+        category: document.getElementById('cat').value,
+        amount: Number(document.getElementById('amt').value),
+        note: document.getElementById('note').value || "",
+        createdAt: Date.now()
+      };
+      await db.ref('entries').push(data);
+      e.target.reset();
+    });
+
+    // קריאה בזמן אמת: יציג מיד בכל המכשירים
+    const list = document.getElementById('list');
+    db.ref('entries').on('value', (snap) => {
+      const all = snap.val() || {};
+      const rows = Object.values(all)
+        .sort((a,b)=>a.createdAt-b.createdAt)
+        .map(x => `<div>${x.category} — ${x.amount} ₪ ${x.note?('— '+x.note):''}</div>`)
+        .join('');
+      list.innerHTML = rows || 'אין נתונים עדיין';
+    });
+  </script>
+</body>
+</html>
 
     initUI();
   </script>
 </body>
 </html>
+
 
