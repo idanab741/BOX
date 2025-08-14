@@ -676,7 +676,7 @@
     }
     function toggleModal(show){ const m = document.getElementById('editModal'); if(show){ m.classList.remove('hidden'); m.classList.add('flex'); } else { m.classList.add('hidden'); m.classList.remove('flex'); } }
     function saveEdit(form){
-      const id = form.querySelector('#editId').value; // FIX: ולא form.id.value
+      const id = form.querySelector('#editId').value; // FIX
       const t = S().transactions.find(x=> x.id===id); if(!t) return;
       t.type     = form.type.value==='income' ? 'income' : 'expense';
       t.amount   = Math.max(0, toNumber(form.amount.value));
@@ -684,8 +684,12 @@
       t.category = String(form.category.value||'').slice(0,60);
       t.date     = new Date(form.date.value||new Date()).toISOString();
       if (t.type==='income' && !t.gross) t.gross = t.amount;
-      saveRoot(); render
-    // main tabs (scoped to the closest .seg)
+      saveRoot(); renderAll(); toast('עודכן'); toggleModal(false);
+    }
+    function deleteRow(id){ const idx = S().transactions.findIndex(x=> x.id===id); if(idx<0) return; S().transactions.splice(idx,1); saveRoot(); renderAll(); toast('נמחק'); toggleModal(false); }
+
+    /* ========= EVENTS ========= */
+    // main tabs (scoped)
     document.querySelectorAll('.seg [data-view]').forEach(btn=>{
       btn.addEventListener('click', ()=>{
         const seg = btn.closest('.seg');
@@ -704,3 +708,91 @@
       btn.addEventListener('click', ()=>{
         const seg = btn.closest('.seg');
         seg.querySelectorAll('button').forEach(b=>{ b.classList.remove('on'); b.setAttribute('aria-selected','false'); });
+        btn.classList.add('on'); btn.setAttribute('aria-selected','true');
+        const v=btn.getAttribute('data-subview');
+        document.querySelectorAll('#view-expenses [data-subpanel]').forEach(p=>{ p.classList.toggle('hidden', p.getAttribute('data-subpanel')!==v); });
+      });
+    });
+
+    // sub tabs (savings)
+    document.querySelectorAll('#view-savings .seg [data-subview]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const seg = btn.closest('.seg');
+        seg.querySelectorAll('button').forEach(b=>{ b.classList.remove('on'); b.setAttribute('aria-selected','false'); });
+        btn.classList.add('on'); btn.setAttribute('aria-selected','true');
+        const v=btn.getAttribute('data-subview');
+        document.querySelectorAll('#view-savings [data-subpanel]').forEach(p=>{ p.classList.toggle('hidden', p.getAttribute('data-subpanel')!==v); });
+      });
+    });
+
+    // budget
+    document.getElementById('formTotalBudget')?.addEventListener('submit', e=>{ e.preventDefault(); const v=toNumber(document.getElementById('totalBudgetInput').value); S().totalBudget=v; saveRoot(); renderAll(); toast('התקציב עודכן'); e.currentTarget.reset(); });
+
+    // income
+    document.getElementById('btnAddIncomeInline')?.addEventListener('click', ()=>{ const f=document.getElementById('formIncomeInline'); f.classList.toggle('hidden'); if(!f.classList.contains('hidden')) document.getElementById('incomeNet').focus(); });
+    document.getElementById('formIncomeInline')?.addEventListener('submit', e=>{ e.preventDefault(); const f=e.currentTarget; addIncome({ net:f.querySelector('#incomeNet').value, gross:f.querySelector('#incomeGross').value, source:f.querySelector('#incomeSource').value, date:f.querySelector('#incomeDate').value }); f.reset(); f.classList.add('hidden'); });
+
+    // expenses add
+    document.getElementById('formExpense')?.addEventListener('submit', e=>{ e.preventDefault(); const f=e.currentTarget; if(!f.querySelector('#catSelect').value) { toast('בחר קטגוריה'); f.querySelector('#catSelect').focus(); return; } if(!f.querySelector('#expAmount').value) { toast('מלא/י סכום'); f.querySelector('#expAmount').focus(); return; } addExpense({ amount:f.querySelector('#expAmount').value, category:f.querySelector('#catSelect').value, merchant:f.querySelector('#expMerchant').value, date:f.querySelector('#expDate').value }); f.reset(); updateCatBadge(); });
+
+    // filters
+    ;['filterText','filterCat','filterFrom','filterTo','sortBy'].forEach(id=>{ const el=document.getElementById(id); if(!el) return; el.addEventListener('input', renderExpensesList); el.addEventListener('change', renderExpensesList); });
+
+    // fixed add/update
+    document.getElementById('formFixedAdd')?.addEventListener('submit', e=>{
+      e.preventDefault(); const name=document.getElementById('fixName').value; const amount=toNumber(document.getElementById('fixAmount').value); const start=document.getElementById('fixStart').value || (ROOT.current+'-01'); const until=document.getElementById('fixUntil').value || null;
+      if(!name || !amount){ toast('שם וסכום נדרשים'); return; }
+      const ex=S().recurring.find(r=>r.name===name);
+      if(ex){ ex.amount=amount; ex.start=new Date(start).toISOString(); ex.until=until? new Date(until).toISOString():null; }
+      else { S().recurring.push({id:uuid(), name, amount, start:new Date(start).toISOString(), until:until? new Date(until).toISOString():null}); }
+      saveRoot(); renderAll(); toast('עודכן חיוב קבוע'); e.currentTarget.reset();
+    });
+
+    // pension
+    document.getElementById('formPensionAdd')?.addEventListener('submit', e=>{ e.preventDefault(); const f=e.currentTarget; upsertPension({ owner:f.querySelector('#penOwner').value, balance:f.querySelector('#penBalance').value, monthly:f.querySelector('#penMonthly').value }); f.reset(); });
+
+    // savings modules
+    document.getElementById('formKeren')?.addEventListener('submit', e=>{ e.preventDefault(); const n=document.getElementById('krName').value.trim(); const b=toNumber(document.getElementById('krBalance').value); const m=toNumber(document.getElementById('krMonthly').value); if(!n){toast('שם קרן נדרש');return;} const ex=S().savings.krans.find(x=>x.name===n); if(ex){ ex.balance=b; ex.monthly=m; } else { S().savings.krans.push({id:uuid(), name:n, balance:b, monthly:m}); } saveRoot(); renderAll(); toast('קרן השתלמות נשמרה'); e.currentTarget.reset(); });
+    document.getElementById('formDeposit')?.addEventListener('submit', e=>{ e.preventDefault(); const n=document.getElementById('depName').value.trim(); const b=toNumber(document.getElementById('depBalance').value); const m=toNumber(document.getElementById('depAdd').value); if(!n){toast('שם חשבון נדרש');return;} const ex=S().savings.deposits.find(x=>x.name===n); if(ex){ ex.balance=b; ex.monthly=m; } else { S().savings.deposits.push({id:uuid(), name:n, balance:b, monthly:m}); } saveRoot(); renderAll(); toast('פיקדון נשמר'); e.currentTarget.reset(); });
+    document.getElementById('formGoal')?.addEventListener('submit', e=>{ e.preventDefault(); const n=document.getElementById('goalName').value.trim(); const t=toNumber(document.getElementById('goalTarget').value); const m=toNumber(document.getElementById('goalMonthly').value); if(!n||!t){toast('שם ויעד נדרשים');return;} const ex=S().savings.goals.find(x=>x.name===n); if(ex){ ex.target=t; ex.monthly=m; ex.balance=ex.balance||0; } else { S().savings.goals.push({id:uuid(), name:n, target:t, monthly:m, balance:0}); } saveRoot(); renderAll(); toast('תכנית חיסכון נשמרה'); e.currentTarget.reset(); });
+
+    // quick bar
+    document.getElementById('quickAddExpense')?.addEventListener('click', ()=>{ document.querySelector('.seg [data-view="expenses"]').click(); document.getElementById('expAmount').focus(); });
+    document.getElementById('quickAddIncome')?.addEventListener('click', ()=>{ document.querySelector('.seg [data-view="home"]').click(); const f=document.getElementById('formIncomeInline'); if(f && f.classList.contains('hidden')) f.classList.remove('hidden'); document.getElementById('incomeNet').focus(); });
+    document.getElementById('quickAddRecurring')?.addEventListener('click', ()=>{ document.querySelector('.seg [data-view="expenses"]').click(); document.querySelector('#view-expenses .seg [data-subview="exp-fixed"]').click(); document.getElementById('fixName').focus(); });
+
+    // edit modal events
+    document.getElementById('editClose').onclick = ()=> toggleModal(false);
+    document.getElementById('editCancel').onclick = ()=> toggleModal(false);
+    document.getElementById('formEdit').addEventListener('submit', e=>{ e.preventDefault(); saveEdit(e.currentTarget); });
+    document.getElementById('editDelete').addEventListener('click', ()=> deleteRow(document.getElementById('editId').value));
+
+    // month picker events
+    document.getElementById('btnMonthPicker')?.addEventListener('click', openMonthPicker);
+    document.getElementById('mpClose')?.addEventListener('click', ()=> toggleMP(false));
+
+    // category change badge
+    document.getElementById('catSelect')?.addEventListener('change', updateCatBadge);
+
+    function syncTodayInputs(){
+      const d = new Date(ROOT.current+'-01');
+      const dateStr = `${d.getFullYear()}-${pad(d.getMonth()+1)}-01`;
+      ;['incomeDate','expDate','fixStart'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=dateStr; });
+    }
+
+    function initCategoryFilters(){
+      const selFilter = document.getElementById('filterCat'); if(!selFilter || selFilter.dataset.initedFilter) return; ["כל הקטגוריות", ...VARIABLE].forEach((c,i)=>{ const o=document.createElement('option'); o.value=i?c:''; o.textContent=c; selFilter.appendChild(o);}); selFilter.dataset.initedFilter='1';
+    }
+
+    function initUI(){
+      initCategorySelects();
+      initCategoryFilters();
+      buildMonthStrip();
+      syncTodayInputs();
+      renderAll();
+    }
+
+    initUI();
+  </script>
+</body>
+</html>
