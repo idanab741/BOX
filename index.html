@@ -730,3 +730,34 @@
   </script>
 </body>
 </html>
+
+<!-- ==== FIREBASE (הדבקה לפני </body>) ==== -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+  // ההגדרות שלך (בדוק שה- databaseURL זהה למה שמופיע ב-Firebase)
+  const firebaseConfig = {
+    apiKey: "AIzaSyCIz_RgFpXa9vlAku7_9V3iKxasZbMn-XI",
+    authDomain: "box-il.firebaseapp.com",
+    databaseURL: "https://box-il-default-rtdb.firebaseio.com",
+    projectId: "box-il",
+    storageBucket: "box-il.firebasestorage.app",
+    messagingSenderId: "935297190111",
+    appId: "1:935297190111:web:403c15cc7e6fa45e99416a",
+    measurementId: "G-H8Z38B2W04"
+  };
+
+  // אתחול
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  // בדיקת כתיבה/קריאה מינימלית
+  (async () => {
+    const ref = db.ref('ping').push();
+    await ref.set({at: Date.now(), note: 'hello'});
+    db.ref('ping').limitToLast(1).on('value', snap => {
+      console.log('✅ DB OK:', snap.val());
+    });
+  })();
+</script>
+<!-- ==== /FIREBASE ==== -->
