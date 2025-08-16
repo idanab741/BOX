@@ -42,7 +42,6 @@
       color:var(--ink);
       -webkit-font-smoothing:antialiased;
       -moz-osx-font-smoothing:grayscale;
-      /* הערה 7 – פחות רווח בתחתית */
       padding-bottom:calc(env(safe-area-inset-bottom) + 56px);
     }
     .container{max-width:28rem;margin-inline:auto}
@@ -70,6 +69,7 @@
     .input{border-radius:12px;border:1px solid rgba(255,255,255,.08);background:#0f172a;color:#0be5b3;padding:.75rem .85rem;min-height:var(--tap)}
     input[type="date"].input{appearance:none;-webkit-appearance:none;line-height:1.2}
     .label{color:var(--muted);font-size:.8rem}
+    .no-top-gap > *:first-child{margin-top:0 !important}
   </style>
 </head>
 <body>
@@ -80,12 +80,11 @@
         <h1 class="text-[clamp(1rem,3.6vw,1.2rem)] font-bold tracking-tight">ארנק חכם</h1>
         <button id="btnMonthPicker" class="chip text-xs" title="בחר חודש" type="button">בחר חודש ▾</button>
       </div>
-      <!-- הערה 1 – הוסר סט צ'יפים של חודשים -->
       <div id="currentMonthLabel" class="text-[.72rem] text-slate-400 mt-2"></div>
     </section>
 
-    <!-- MAIN TABS (הוסר "עובר ושב" – הערה 2) -->
-    <nav class="seg card p-1" role="tablist" aria-label="ניווט">
+    <!-- MAIN TABS -->
+    <nav id="mainTabs" class="seg card p-1" role="tablist" aria-label="ניווט">
       <button class="on" role="tab" aria-selected="true" aria-controls="view-home" data-view="home" type="button">ניהול מעקב</button>
       <button role="tab" aria-selected="false" aria-controls="view-expenses" data-view="expenses" type="button">הוצאות</button>
       <button role="tab" aria-selected="false" aria-controls="view-savings" data-view="savings" type="button">חיסכון</button>
@@ -93,14 +92,17 @@
 
     <!-- VIEW: HOME -->
     <section id="view-home" class="space-y-4" data-view-panel="home">
-      <!-- הערה 3 – כרטיס עו"ש במקום תקציב -->
+      <!-- עו"ש מינימייזבל -->
       <section class="card p-4" role="region" aria-labelledby="sec-ovr">
-        <h3 id="sec-ovr" class="text-[.95rem] font-semibold mb-2">עובר ושב</h3>
         <div class="flex items-center justify-between">
+          <h3 id="sec-ovr" class="text-[.95rem] font-semibold">עובר ושב</h3>
+          <button id="ovToggle" class="chip text-xs" type="button" aria-expanded="true">מזער ▾</button>
+        </div>
+        <div class="flex items-center justify-between mt-2">
           <div class="text-xs text-slate-400">יתרה נוכחית</div>
           <div id="ovHomeVal" class="text-xl font-semibold">₪0</div>
         </div>
-        <form id="formOverdraftHome" class="mt-3 space-y-2">
+        <form id="formOverdraftHome" class="mt-3 space-y-2" aria-hidden="false">
           <input id="ovHomeInput" class="input w-full text-right" placeholder="סכום עו״ש לחודש הנוכחי" inputmode="decimal" />
           <button class="btn btn-prim w-full" type="submit">שמור</button>
         </form>
@@ -112,24 +114,22 @@
         <div class="grid grid-cols-2 gap-2 text-[.9rem]" role="group" aria-label="מדדים חודשיים">
           <div class="kpi flex items-center justify-between"><span class="text-slate-400">הוצאות</span><b id="kpiCurExp">₪0</b></div>
           <div class="kpi flex items-center justify-between"><span class="text-slate-400">תקציב</span><b id="kpiBudget">₪0</b></div>
-          <div class="kpi flex items-center justify-between"><span class="text-slate-400">נטו</span><b id="kpiNet">₪0</b></div>
-          <!-- הערה 4 – בלי 'חודשי' -->
           <div class="kpi flex items-center justify-between"><span class="text-slate-400">עודף</span><b id="kpiSurplus">₪0</b></div>
-          <!-- הערה 4 – KPI חדשים -->
+          <!-- במקום 'נטו' → עו"ש -->
           <div class="kpi flex items-center justify-between"><span class="text-slate-400">עו"ש</span><b id="kpiOverdraft">₪0</b></div>
+          <!-- חיסכון (ללא פנסיה) + פנסיה כ־KPI נפרד -->
           <div class="kpi flex items-center justify-between"><span class="text-slate-400">חיסכון</span><b id="kpiSavingsTotal">₪0</b></div>
+          <div class="kpi flex items-center justify-between"><span class="text-slate-400">פנסיה</span><b id="kpiPensionTotal">₪0</b></div>
         </div>
       </header>
 
       <!-- Gauge -->
       <section class="grid grid-cols-1 gap-4">
-        <div class="card p-4" role="region" aria-labelledby="ghead">
-          <!-- הערה 5 – במקום 'עובר ושב' כאן: כפתור עדכון תקציב חודשי -->
+        <div class="card p-4 relative" role="region" aria-labelledby="ghead">
+          <div class="absolute top-3 right-3 text-[.7rem] text-slate-400">מעקב חודשי</div>
           <div class="flex items-center justify-end mb-2">
             <button id="btnBudgetQuickEdit" class="chip text-xs" type="button">תקציב חודשי ▾</button>
           </div>
-
-          <!-- הערה 5 – הוסר צ'יפ 'ניצול חודשי' והטקסט העליון -->
           <div class="relative w-full" style="aspect-ratio:2/1" aria-hidden="true">
             <svg id="gsvg" class="absolute inset-0" viewBox="0 0 100 60" preserveAspectRatio="xMidYMid meet">
               <path id="gTrack" d="M10,50 A40,40 0 0 1 90,50" fill="none" stroke="#1f2937" stroke-width="12" stroke-linecap="round"/>
@@ -190,7 +190,6 @@
           <form id="formExpense" class="grid grid-cols-1 gap-3 mb-3" role="form">
             <input id="expAmount" class="input text-right" placeholder="סכום (למשל 129.9)" inputmode="decimal" required />
             <input id="expMerchant" class="input" placeholder="ספק/תיאור" />
-            <!-- הערה 8 – קטגוריות משתנות זהות למעלה/למטה -->
             <select id="catSelect" class="input" required></select>
             <input type="date" id="expDate" class="input text-right" />
             <button class="btn btn-prim">הוסף הוצאה</button>
@@ -274,7 +273,11 @@
           <form id="formDeposit" class="grid grid-cols-2 gap-2 mb-2">
             <input id="depName" class="input col-span-2" placeholder="שם החשבון" />
             <input id="depBalance" class="input text-right" inputmode="decimal" placeholder="יתרה התחלתית (אוג׳ 2025)" />
-            <input id="depAdd" class="input text-right" inputmode="decimal" placeholder="הפקדה חודשית" />
+            <div class="col-span-2 flex items-center gap-2">
+              <input id="depHasMonthly" type="checkbox" class="h-5 w-5" />
+              <label for="depHasMonthly" class="text-sm text-slate-300">יש הפקדה חודשית</label>
+            </div>
+            <input id="depAdd" class="input text-right col-span-2" inputmode="decimal" placeholder="הפקדה חודשית" disabled />
             <button class="btn btn-prim col-span-2">שמור</button>
           </form>
           <ul id="depList" class="space-y-2"></ul>
@@ -300,7 +303,7 @@
     </footer>
   </main>
 
-  <!-- Sticky Quick Bar – הערה 11 -->
+  <!-- Sticky Quick Bar -->
   <nav class="fixed inset-x-0 bottom-0 bg-[#0f172a]/95 backdrop-blur border-t border-slate-800 p-3 z-30" role="navigation" aria-label="ניווט מהיר">
     <div class="container grid grid-cols-3 gap-2">
       <button id="navHome"  class="btn btn-prim text-sm w-full" type="button">ארנק דיגיטלי</button>
@@ -331,7 +334,6 @@
         <input name="amount" id="editAmount" class="input text-right" inputmode="decimal" />
         <label class="label" for="editMerchant">ספק/תיאור</label>
         <input name="merchant" id="editMerchant" class="input" />
-        <!-- הערה 6 – שורת קטגוריה תוצג רק עבור הוצאה -->
         <label class="label" for="editCategory" id="editCategoryLabel">קטגוריה</label>
         <select name="category" id="editCategory" class="input"></select>
         <label class="label" for="editDate">תאריך</label>
@@ -347,7 +349,7 @@
     </div>
   </div>
 
-  <!-- Month Picker Modal (הערה 1 – כפתורים קטנים) -->
+  <!-- Month Picker Modal -->
   <div id="monthPicker" class="hidden fixed inset-0 z-40 items-end md:items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="mpTitle">
     <div class="absolute inset-0 bg-black/50"></div>
     <div class="relative card w-full md:w-[520px] p-5 m-0 md:mx-auto">
@@ -359,7 +361,7 @@
     </div>
   </div>
 
-  <!-- VIEW: PETTY (הערה 11) -->
+  <!-- VIEW: PETTY -->
   <section id="view-petty" class="hidden container p-3 space-y-4" data-view-panel="petty">
     <div class="card p-4">
       <div class="flex items-center justify-between mb-2">
@@ -394,8 +396,8 @@
     </div>
   </section>
 
-  <!-- VIEW: NOTES (הערה 11) -->
-  <section id="view-notes" class="hidden container p-3 space-y-4" data-view-panel="notes">
+  <!-- VIEW: NOTES -->
+  <section id="view-notes" class="hidden container p-3 no-top-gap" data-view-panel="notes">
     <div class="card p-4">
       <h3 class="text-[.95rem] font-semibold mb-2">הערות</h3>
       <form id="formNote" class="grid grid-cols-1 gap-2 mb-3">
@@ -404,12 +406,28 @@
         <input type="date" id="noteDue" class="input text-right" />
         <button class="btn btn-prim" type="submit">הוסף הערה</button>
       </form>
+
+      <!-- לוח שנה -->
+      <div id="calendarWrap" class="mb-3">
+        <div class="flex items-center justify-between mb-2">
+          <div class="text-sm text-slate-300" id="calTitle"></div>
+          <div class="flex gap-2">
+            <button id="calPrev" type="button" class="chip text-xs">«</button>
+            <button id="calNext" type="button" class="chip text-xs">»</button>
+          </div>
+        </div>
+        <div class="grid grid-cols-7 gap-1 text-[.72rem] text-slate-400 mb-1">
+          <div>א׳</div><div>ב׳</div><div>ג׳</div><div>ד׳</div><div>ה׳</div><div>ו׳</div><div>ש׳</div>
+        </div>
+        <div id="calendarGrid" class="grid grid-cols-7 gap-1"></div>
+      </div>
+
       <ul id="notesList" class="space-y-2"></ul>
     </div>
   </section>
 
   <script>
-    /* ========= חיבור ל-Supabase ========= */
+    /* ========= Supabase ========= */
     const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
     /* ========= UTIL ========= */
@@ -439,17 +457,16 @@
     function defaultMonthState(){
       return {
         totalBudget: 0,
-        overdraft: 0,          // עובר ושב פר חודש
-        transactions: [],      // {id,date,type:'income'|'expense',amount,gross?,category,merchant}
-        pensions: [],          // {id,owner,balance,monthly,lastUpdate}
-        recurring: [],         // {id,name,amount}
-        savings:{ krans:[], deposits:[], goals:[] }
+        overdraft: 0,
+        transactions: [],
+        pensions: [],
+        recurring: [],
+        savings:{ krans:[], deposits:[], goals:[] } // שים לב: פנסיה נפרד
       };
     }
     function loadRoot(){ try{ return JSON.parse(localStorage.getItem(ROOT_KEY)) || {}; } catch{ return {}; } }
     function saveRoot(){ localStorage.setItem(ROOT_KEY, JSON.stringify(ROOT)); }
 
-    // עזרי חודשים
     function prevMonthKey(key){
       const [y,m] = key.split('-').map(Number);
       const d = new Date(y, m-2, 1);
@@ -459,25 +476,12 @@
       const d=new Date(iso); const [y,m]=key.split('-').map(Number);
       return d.getFullYear()===y && (d.getMonth()+1)===m;
     }
-    function monthlyTotalsFor(key){
-      const state = ROOT.months[key] || defaultMonthState();
-      let net=0, gross=0, exp=0;
-      for(const t of state.transactions||[]){
-        if(!isSameMonth(t.date, key)) continue;
-        if(t.type==='income'){ net += toNumber(t.amount); gross += toNumber(t.gross || t.amount); }
-        else { exp += toNumber(t.amount); }
-      }
-      const fixed = (state.recurring||[]).reduce((s,r)=> s + toNumber(r.amount||0), 0);
-      return { net, gross, exp, fixed, surplus: net - (exp + fixed) };
-    }
-
     function ensureMonth(key){
       if(!ROOT.months[key]){
         ROOT.months[key] = defaultMonthState();
         const pk = prevMonthKey(key);
         const prev = ROOT.months[pk];
         if (prev){
-          // גלגול עו״ש + הערות 9–10: חיובים/חיסכון קדימה
           const { surplus } = monthlyTotalsFor(pk);
           ROOT.months[key].overdraft = toNumber(prev.overdraft||0) + surplus;
           ROOT.months[key].recurring = JSON.parse(JSON.stringify(prev.recurring||[]));
@@ -488,33 +492,26 @@
     }
     function S(){ return ROOT.months[ROOT.current]; }
 
-    /* Initialize starting at Aug 2025 */
+    /* ========= INIT ========= */
     let ROOT = loadRoot();
     if(!ROOT.months) ROOT.months = {};
     if(!ROOT.current) ROOT.current = '2025-08';
-    // הרחבות להערה 11 – קופה קטנה/הערות גלובליים
-    if(!ROOT.petty) ROOT.petty = { budgetCap:0, transactions:[] }; // {id,date,amount,merchant,category}
-    if(!ROOT.notes) ROOT.notes = []; // {id,title,body,due,done}
+    if(!ROOT.petty) ROOT.petty = { budgetCap:0, transactions:[] };
+    if(!ROOT.notes) ROOT.notes = [];
     ensureMonth(ROOT.current); saveRoot();
 
     /* ========= CLOUD SYNC ========= */
     async function loadRootFromCloud() {
       try {
-        const { data, error } = await sb
-          .from('wallet')
-          .select('data')
-          .eq('household', HOUSEHOLD_ID)
-          .maybeSingle();
+        const { data, error } = await sb.from('wallet').select('data').eq('household', HOUSEHOLD_ID).maybeSingle();
         if (error) { console.warn('[cloud] load error:', error); return null; }
         return data?.data || null;
       } catch (e) { console.warn('[cloud] load exception:', e); return null; }
     }
     let __cloudSaveTimer = null;
     async function saveRootToCloudNow() {
-      try {
-        const { error } = await sb.from('wallet').upsert({ household: HOUSEHOLD_ID, data: ROOT });
-        if (error) console.warn('[cloud] save error:', error);
-      } catch (e) { console.warn('[cloud] save exception:', e); }
+      try { await sb.from('wallet').upsert({ household: HOUSEHOLD_ID, data: ROOT }); }
+      catch (e) { console.warn('[cloud] save exception:', e); }
     }
     function saveRootToCloud() {
       if (__cloudSaveTimer) clearTimeout(__cloudSaveTimer);
@@ -536,37 +533,66 @@
       } else {
         await saveRootToCloudNow();
       }
-      try {
-        const { data, error } = await sb.from('wallet').select('household').eq('household', HOUSEHOLD_ID).maybeSingle();
-        if (error) console.warn('Supabase check error:', error);
-        else console.log('Supabase ready for household:', data?.household || HOUSEHOLD_ID);
-      } catch {}
     })();
 
-    /* ========= MONTH UI ========= */
+    /* ========= HELPERS ========= */
     function monthLabel(key){ const d=new Date(key+'-01'); return d.toLocaleDateString('he-IL',{month:'long',year:'numeric'}); }
     function setCurrentMonthLabel(){ const el=document.getElementById('currentMonthLabel'); if(el) el.textContent = monthLabel(ROOT.current); }
 
-    function openMonthPicker(){
-      const grid = document.getElementById('mpGrid');
-      grid.innerHTML='';
-      const start = new Date(2025,7,1);
-      const end = new Date(new Date().getFullYear(), new Date().getMonth()+11, 1);
-      for(let d=new Date(start); d<=end; d.setMonth(d.getMonth()+1)){
-        const key=ym(d);
-        const b=document.createElement('button');
-        b.type='button';
-        b.className='btn btn-ghost text-xs py-2'; // קטן יותר
-        b.textContent=d.toLocaleDateString('he-IL',{month:'long',year:'2-digit'});
-        b.addEventListener('click',()=>{ ROOT.current=key; ensureMonth(key); saveRoot(); syncTodayInputs(); renderAll(); toggleMP(false); });
-        grid.appendChild(b);
+    function monthlyTotalsFor(key){
+      const state = ROOT.months[key] || defaultMonthState();
+      let net=0, gross=0, exp=0;
+      for(const t of state.transactions||[]){
+        if(!isSameMonth(t.date, key)) continue;
+        if(t.type==='income'){ net += toNumber(t.amount); gross += toNumber(t.gross || t.amount); }
+        else { exp += toNumber(t.amount); }
       }
-      toggleMP(true);
+      const fixed = (state.recurring||[]).reduce((s,r)=> s + toNumber(r.amount||0), 0);
+      return { net, gross, exp, fixed, surplus: net - (exp + fixed) };
     }
-    function toggleMP(show){
-      const m=document.getElementById('monthPicker');
-      if(show){m.classList.remove('hidden'); m.classList.add('flex');}
-      else {m.classList.add('hidden'); m.classList.remove('flex');}
+
+    // חישוב חיסכון כולל (ללא פנסיה)
+    function savingsOtherTotalFor(state){
+      const k = (state.savings?.krans||[]).reduce((s,x)=> s + toNumber(x.balance||0), 0);
+      const d = (state.savings?.deposits||[]).reduce((s,x)=> s + toNumber(x.balance||0), 0);
+      const g = (state.savings?.goals||[]).reduce((s,x)=> s + toNumber(x.balance||0), 0);
+      return k+d+g;
+    }
+    function pensionTotalFor(state){
+      return (state.pensions||[]).reduce((s,p)=> s + toNumber(p.balance||0), 0);
+    }
+
+    /* ========= FORWARD PROPAGATION ========= */
+    function monthsOnOrAfter(currentKey){
+      const keys = Object.keys(ROOT.months);
+      return keys.filter(k=> k>=currentKey).sort();
+    }
+    function propagateOverdraftForward(value){
+      monthsOnOrAfter(ROOT.current).forEach(k=>{
+        if(!ROOT.months[k]) ROOT.months[k]=defaultMonthState();
+        ROOT.months[k].overdraft = toNumber(value);
+      });
+    }
+    function propagateSavingsForward(){
+      const src = JSON.parse(JSON.stringify(S().savings||{krans:[],deposits:[],goals:[]}));
+      monthsOnOrAfter(ROOT.current).forEach(k=>{
+        ensureMonth(k);
+        ROOT.months[k].savings = JSON.parse(JSON.stringify(src));
+      });
+    }
+    function propagatePensionsForward(){
+      const src = JSON.parse(JSON.stringify(S().pensions||[]));
+      monthsOnOrAfter(ROOT.current).forEach(k=>{
+        ensureMonth(k);
+        ROOT.months[k].pensions = JSON.parse(JSON.stringify(src));
+      });
+    }
+    function propagateRecurringForward(){
+      const src = JSON.parse(JSON.stringify(S().recurring||[]));
+      monthsOnOrAfter(ROOT.current).forEach(k=>{
+        ensureMonth(k);
+        ROOT.months[k].recurring = JSON.parse(JSON.stringify(src));
+      });
     }
 
     /* ========= GAUGES ========= */
@@ -580,7 +606,6 @@
       path.setAttribute('stroke', gaugeColor(clamped));
       const pct = Math.round((clamped||0)*100);
       const center = document.getElementById('centerPct'); if(center) center.textContent = pct+'%';
-      const pctText = document.getElementById('gaugePctText'); if(pctText) pctText.textContent = pct+'%';
       document.getElementById('spentLabel').textContent = ils(spent);
       const leftEl = document.getElementById('leftLabel');
       leftEl.textContent = ils(left);
@@ -598,7 +623,7 @@
       const L = document.getElementById('pettyLeft'); L.textContent = ils(left); L.className = (left<0?'text-red-400 ':'')+'font-semibold';
     }
 
-    /* ========= TOTALS ========= */
+    /* ========= TOTALS / RENDER ========= */
     function totals(){
       let net=0, gross=0, exp=0; const incomes=[], expenses=[];
       for(const t of S().transactions){
@@ -608,15 +633,7 @@
       }
       return {net,gross,exp,incomes,expenses};
     }
-    function savingsTotalFor(state){
-      const p = (state.pensions||[]).reduce((s,x)=> s + toNumber(x.balance||0), 0);
-      const k = (state.savings?.krans||[]).reduce((s,x)=> s + toNumber(x.balance||0), 0);
-      const d = (state.savings?.deposits||[]).reduce((s,x)=> s + toNumber(x.balance||0), 0);
-      const g = (state.savings?.goals||[]).reduce((s,x)=> s + toNumber(x.balance||0), 0);
-      return p+k+d+g;
-    }
 
-    /* ========= RENDER ========= */
     function initCategorySelects(){
       const selAdd = document.getElementById('catSelect');
       const selEdit = document.getElementById('editCategory');
@@ -628,7 +645,6 @@
         const arr = firstLabel ? [firstLabel, ...list] : list.slice();
         arr.forEach((c,i)=>{ const o=document.createElement('option'); o.value=i?(c||'') : ''; o.textContent=c; sel.appendChild(o);});
       };
-      // הערה 8 – לשתי הרשימות בהוצאות משתנות + עריכת הוצאה → רק VARIABLE
       fill(selAdd, VARIABLE, "— בחר קטגוריה —");
       fill(selFilter, VARIABLE, "כל הקטגוריות");
       fill(selEdit, VARIABLE, null);
@@ -643,14 +659,14 @@
     }
 
     function renderIncomeList(){
-      const {incomes} = totals();
+      const {incomes, gross, net} = totals();
       const ul = document.getElementById('incomeList'); ul.innerHTML='';
       incomes.sort((a,b)=> new Date(b.date) - new Date(a.date));
       incomes.forEach(x=>{
         const li=document.createElement('li'); li.className='row flex items-center justify-between gap-2';
         li.innerHTML = `
           <div class="flex flex-col">
-            <span class="text-emerלד-300">הכנסה • ${esc(x.category||'')}</span>
+            <span class="text-emerald-300">הכנסה • ${esc(x.category||'')}</span>
             <span class="text-slate-400 text-xs">${new Date(x.date).toLocaleDateString('he-IL')}</span>
           </div>
           <div class="flex items-center gap-2">
@@ -660,13 +676,13 @@
         li.querySelector('[data-edit]')?.addEventListener('click', ()=> openEdit(x.id));
         ul.appendChild(li);
       });
-      document.getElementById('grossSum').textContent = ils(totals().gross);
-      document.getElementById('netSum').textContent   = ils(totals().net);
+      document.getElementById('grossSum').textContent = ils(gross);
+      document.getElementById('netSum').textContent   = ils(net);
     }
 
     function renderPensions(){
       const list = document.getElementById('pensionList'); if(!list) return; list.innerHTML='';
-      const total = (S().pensions||[]).reduce((s,p)=> s + toNumber(p.balance||0), 0);
+      const total = pensionTotalFor(S());
       const totalEl = document.getElementById('penTotal'); if(totalEl) totalEl.textContent = ils(total);
       if((S().pensions||[]).length===0){
         const li=document.createElement('li'); li.className='text-slate-400 text-sm'; li.textContent='אין חשבונות פנסיה—הוסף/י למעלה.'; list.appendChild(li);
@@ -744,7 +760,7 @@
           </div>`;
         li.querySelector('[data-del]')?.addEventListener('click',()=>{
           const i=S().recurring.findIndex(x=>x.id===r.id);
-          if(i>-1){S().recurring.splice(i,1); saveRoot(); renderAll();}
+          if(i>-1){S().recurring.splice(i,1); propagateRecurringForward(); saveRoot(); renderAll();}
         });
         ul.appendChild(li);
       });
@@ -757,7 +773,7 @@
         (S().savings.krans||[]).forEach(k=>{
           const li=document.createElement('li');
           li.className='row card p-3 flex items-center justify-between';
-          li.innerHTML=`<div class="font-medium">${esc(k.name)}</div><div class="text-sm">יתרה: ${ils(k.balance)} · חודשי: ${ils(k.monthly)}</div>`;
+          li.innerHTML=`<div class="font-medium">${esc(k.name)}</div><div class="text-sm">יתרה: ${ils(k.balance)} · חודשי: ${ils(k.monthly||0)}</div>`;
           krList.appendChild(li);
         });
       }
@@ -767,7 +783,8 @@
         (S().savings.deposits||[]).forEach(d=>{
           const li=document.createElement('li');
           li.className='row card p-3 flex items-center justify-between';
-          li.innerHTML=`<div class="font-medium">${esc(d.name)}</div><div class="text-sm">יתרה: ${ils(d.balance)} · חודשי: ${ils(d.monthly)}</div>`;
+          const monthly = toNumber(d.monthly||0)>0 ? ` · חודשי: ${ils(d.monthly)}` : '';
+          li.innerHTML=`<div class="font-medium">${esc(d.name)}</div><div class="text-sm">יתרה: ${ils(d.balance)}${monthly}</div>`;
           depList.appendChild(li);
         });
       }
@@ -788,45 +805,40 @@
       setCurrentMonthLabel();
       const t = totals();
 
-      // סכומים עליונים
       document.getElementById('kpiBudget').textContent = ils(S().totalBudget);
-      document.getElementById('kpiNet').textContent    = ils(t.net);
       document.getElementById('grossSum').textContent  = ils(t.gross);
       document.getElementById('netSum').textContent    = ils(t.net);
-      const savingsT = savingsTotalFor(S());
-      document.getElementById('kpiSavingsTotal').textContent = ils(savingsT);
 
-      // חיובים קבועים
+      const savingsOther = savingsOtherTotalFor(S());
+      const pensionTotal = pensionTotalFor(S());
+      document.getElementById('kpiSavingsTotal').textContent = ils(savingsOther);
+      document.getElementById('kpiPensionTotal').textContent = ils(pensionTotal);
+
       const fixedThisMonth = (S().recurring||[]).reduce((s,r)=> s + toNumber(r.amount||0), 0);
-
       const spent = t.exp + fixedThisMonth;
       const surplus = t.net - spent;
       document.getElementById('kpiSurplus').textContent = ils(surplus);
       document.getElementById('kpiCurExp').textContent  = ils(t.exp);
       document.getElementById('kpiOverdraft').textContent = ils(S().overdraft||0);
+
       const left  = (S().totalBudget||0) - spent;
       const pct   = S().totalBudget>0 ? spent/S().totalBudget : 0;
       setGauge(pct, spent, left);
 
-      // עו״ש בכרטיס העליון
       const ovHome = document.getElementById('ovHomeVal'); if(ovHome) ovHome.textContent = ils(S().overdraft||0);
     }
 
     function renderPetty(){
-      // קטגוריות
       initCategorySelects();
-      // קלט תאריך ברירת מחדל
       const d = new Date(); const dateStr = `${d.getFullYear()}-${pad(d.getMonth()+1)}-01`;
       const pd = document.getElementById('pettyDate'); if(pd && !pd.value) pd.value = dateStr;
 
-      // חישובים
       const spent = (ROOT.petty.transactions||[]).reduce((s,x)=> s + toNumber(x.amount||0), 0);
       const cap = toNumber(ROOT.petty.budgetCap||0);
       const left = cap - spent;
       const pct = cap>0 ? spent/cap : 0;
       setPettyGauge(pct, spent, left);
 
-      // רשימה
       const ul = document.getElementById('pettyList'); if(!ul) return; ul.innerHTML='';
       ROOT.petty.transactions.slice().sort((a,b)=> new Date(b.date)-new Date(a.date)).forEach(x=>{
         const li = document.createElement('li'); li.className='row flex items-center justify-between gap-2';
@@ -847,6 +859,61 @@
       });
     }
 
+    /* ==== NOTES + CALENDAR ==== */
+    let calendarCursor = new Date(); // מציג חודש ללוח שנה
+    function startOfMonth(d){ return new Date(d.getFullYear(), d.getMonth(), 1); }
+    function endOfMonth(d){ return new Date(d.getFullYear(), d.getMonth()+1, 0); }
+    function buildCalendar(){
+      const grid = document.getElementById('calendarGrid');
+      const title = document.getElementById('calTitle');
+      if(!grid || !title) return;
+      grid.innerHTML='';
+      const s = startOfMonth(calendarCursor);
+      const e = endOfMonth(calendarCursor);
+      title.textContent = s.toLocaleDateString('he-IL',{month:'long', year:'numeric'});
+      const startWeekday = (s.getDay()+6)%7; // הפוך ל־א׳ כעמודה ראשונה
+      const totalDays = e.getDate();
+
+      // אסוף מועדי הערות
+      const notes = ROOT.notes||[];
+      const byDay = {};
+      notes.forEach(n=>{
+        if(!n.due) return;
+        const d = new Date(n.due);
+        if(d.getMonth()!==s.getMonth() || d.getFullYear()!==s.getFullYear()) return;
+        const day = d.getDate();
+        if(!byDay[day]) byDay[day]=[];
+        byDay[day].push(n);
+      });
+
+      for(let i=0;i<startWeekday;i++){ const ph=document.createElement('div'); ph.className='h-10'; grid.appendChild(ph); }
+      for(let day=1; day<=totalDays; day++){
+        const cell=document.createElement('button');
+        cell.type='button';
+        cell.className='card p-2 h-14 text-left relative';
+        cell.innerHTML = `<div class="text-[.75rem] text-slate-300">${day}</div>`;
+        if(byDay[day]){
+          const dots=document.createElement('div');
+          dots.className='absolute bottom-1 left-2 flex gap-1';
+          byDay[day].forEach(()=>{ const dot=document.createElement('span'); dot.className='w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block'; dots.appendChild(dot); });
+          cell.appendChild(dots);
+        }
+        cell.addEventListener('click', ()=>{
+          filterNotesByDate(new Date(s.getFullYear(), s.getMonth(), day));
+        });
+        grid.appendChild(cell);
+      }
+    }
+    function filterNotesByDate(date){
+      const ul = document.getElementById('notesList'); if(!ul) return;
+      ul.querySelectorAll('li').forEach(li=>{
+        const due = li.getAttribute('data-due')||'';
+        if(!due){ li.style.display=''; return; }
+        const d = new Date(due);
+        const match = d.getFullYear()===date.getFullYear() && d.getMonth()===date.getMonth() && d.getDate()===date.getDate();
+        li.style.display = match ? '' : 'none';
+      });
+    }
     function renderNotes(){
       const ul = document.getElementById('notesList'); if(!ul) return;
       ul.innerHTML='';
@@ -858,6 +925,7 @@
       });
       arr.forEach(n=>{
         const li = document.createElement('li'); li.className='row card p-3 flex items-center justify-between gap-3';
+        if(n.due) li.setAttribute('data-due', n.due);
         li.innerHTML = `
           <div class="flex-1">
             <div class="font-medium ${n.done?'line-through text-slate-400':''}">${esc(n.title||'ללא כותרת')}</div>
@@ -869,10 +937,10 @@
             <button class="btn btn-danger text-xs" data-del="${n.id}">מחק</button>
           </div>`;
         li.querySelector(`[data-toggle="${n.id}"]`)?.addEventListener('click', ()=>{
-          const it = ROOT.notes.find(x=>x.id===n.id); if(it){ it.done=!it.done; saveRoot(); renderNotes(); }
+          const it = ROOT.notes.find(x=>x.id===n.id); if(it){ it.done=!it.done; saveRoot(); renderNotes(); buildCalendar(); }
         });
         li.querySelector(`[data-del="${n.id}"]`)?.addEventListener('click', ()=>{
-          const i = ROOT.notes.findIndex(x=>x.id===n.id); if(i>-1){ ROOT.notes.splice(i,1); saveRoot(); renderNotes(); }
+          const i = ROOT.notes.findIndex(x=>x.id===n.id); if(i>-1){ ROOT.notes.splice(i,1); saveRoot(); renderNotes(); buildCalendar(); }
         });
         ul.appendChild(li);
       });
@@ -890,6 +958,7 @@
       updateCatBadge();
       renderPetty();
       renderNotes();
+      buildCalendar();
     }
 
     /* ========= MUTATIONS ========= */
@@ -917,12 +986,12 @@
       const ex = (S().pensions||[]).find(p=> p.owner===nm);
       if (ex){ ex.balance = bal; ex.monthly = mon; ex.lastUpdate = new Date().toISOString(); toast(`עודכן "${nm}"`); }
       else { (S().pensions).unshift({ id:uuid(), owner:nm, balance:bal, monthly:mon, lastUpdate:new Date().toISOString() }); toast(`נוסף "${nm}"`); }
-      saveRoot(); renderAll();
+      propagatePensionsForward(); saveRoot(); renderAll();
     }
     function deletePension(id){
       const idx = (S().pensions||[]).findIndex(p=>p.id===id);
       if(idx<0) return;
-      S().pensions.splice(idx,1); saveRoot(); renderAll(); toast('חשבון הוסר');
+      S().pensions.splice(idx,1); propagatePensionsForward(); saveRoot(); renderAll(); toast('חשבון הוסר');
     }
 
     /* ========= EDIT ========= */
@@ -941,7 +1010,7 @@
       document.getElementById('editMerchant').value = t.merchant||'';
       document.getElementById('editCategory').value = t.category||'';
       document.getElementById('editDate').value = toInputDate(t.date);
-      toggleEditCategoryVisibility(); // הערה 6
+      toggleEditCategoryVisibility();
       toggleModal(true);
     }
     function toggleModal(show){
@@ -967,7 +1036,37 @@
     }
 
     /* ========= EVENTS ========= */
-    // main tabs
+    // Hide/show main tabs on quick panels
+    function toggleMainTabs(show){
+      const el = document.getElementById('mainTabs');
+      if(!el) return;
+      el.style.display = show ? '' : 'none';
+    }
+    function setQuickActive(which){
+      document.getElementById('navHome').classList.toggle('btn-prim', which==='home');
+      document.getElementById('navHome').classList.toggle('btn-ghost', which!=='home');
+      document.getElementById('navPetty').classList.toggle('btn-prim', which==='petty');
+      document.getElementById('navPetty').classList.toggle('btn-ghost', which!=='petty');
+      document.getElementById('navNotes').classList.toggle('btn-prim', which==='notes');
+      document.getElementById('navNotes').classList.toggle('btn-ghost', which!=='notes');
+    }
+    function showPanel(id){
+      ['home','expenses','savings'].forEach(v=>{
+        const p = document.querySelector(`[data-view-panel="${v}"]`);
+        if(p) p.classList.toggle('hidden', id!==v);
+      });
+      ['petty','notes'].forEach(v=>{
+        const p = document.querySelector(`[data-view-panel="${v}"]`);
+        if(p) p.classList.toggle('hidden', id!==v);
+      });
+      toggleMainTabs(id==='home' || id==='expenses' || id==='savings');
+      setQuickActive(id);
+    }
+    document.getElementById('navHome')?.addEventListener('click', ()=> showPanel('home'));
+    document.getElementById('navPetty')?.addEventListener('click', ()=> showPanel('petty'));
+    document.getElementById('navNotes')?.addEventListener('click', ()=> showPanel('notes'));
+
+    // main tabs (inside the main view only)
     document.querySelectorAll('.seg [data-view]').forEach(btn=>{
       btn.addEventListener('click', ()=>{
         const seg = btn.closest('.seg');
@@ -1008,15 +1107,23 @@
       });
     });
 
-    // עו״ש בכרטיס הבית
+    // עו"ש: מזעור
+    document.getElementById('ovToggle')?.addEventListener('click', (e)=>{
+      const form = document.getElementById('formOverdraftHome');
+      const expanded = form.getAttribute('aria-hidden')==='false' || !form.getAttribute('aria-hidden');
+      if(expanded){ form.setAttribute('aria-hidden','true'); form.classList.add('hidden'); e.currentTarget.textContent='הרחב ▸'; }
+      else { form.setAttribute('aria-hidden','false'); form.classList.remove('hidden'); e.currentTarget.textContent='מזער ▾'; }
+    });
+
+    // עו"ש: שמירה + הפצה קדימה
     document.getElementById('formOverdraftHome')?.addEventListener('submit', e=>{
       e.preventDefault();
       const v = toNumber(document.getElementById('ovHomeInput').value);
-      S().overdraft = v; saveRoot(); renderAll(); toast('עודכן עובר ושב');
+      S().overdraft = v; propagateOverdraftForward(v); saveRoot(); renderAll(); toast('עודכן עובר ושב');
       e.currentTarget.reset();
     });
 
-    // עדכון תקציב מהצ'יפ (הערה 5)
+    // תקציב חודשי
     document.getElementById('btnBudgetQuickEdit')?.addEventListener('click', ()=>{
       const newVal = prompt('הזן תקציב לחודש הנוכחי', S().totalBudget || 0);
       if(newVal!==null){
@@ -1025,7 +1132,7 @@
       }
     });
 
-    // income add
+    // הכנסות
     document.getElementById('btnAddIncomeInline')?.addEventListener('click', ()=>{
       const f=document.getElementById('formIncomeInline');
       f.classList.toggle('hidden');
@@ -1043,7 +1150,7 @@
       f.reset(); f.classList.add('hidden');
     });
 
-    // expenses add
+    // הוצאות
     document.getElementById('formExpense')?.addEventListener('submit', e=>{
       e.preventDefault();
       const f=e.currentTarget;
@@ -1057,16 +1164,14 @@
       });
       f.reset(); updateCatBadge();
     });
-    // filters
     ['filterText','filterCat','filterFrom','filterTo','sortBy'].forEach(id=>{
       const el=document.getElementById(id); if(!el) return;
       el.addEventListener('input', renderExpensesList);
       el.addEventListener('change', renderExpensesList);
     });
-    // cat badge on change
     document.getElementById('catSelect')?.addEventListener('change', updateCatBadge);
 
-    // fixed add/update (הערה 9 – גלובלי קדימה via ensureMonth)
+    // קבועות (הפצה קדימה)
     document.getElementById('formFixedAdd')?.addEventListener('submit', e=>{
       e.preventDefault();
       const name=document.getElementById('fixName').value;
@@ -1075,10 +1180,10 @@
       const ex=(S().recurring||[]).find(r=>r.name===name);
       if(ex){ ex.amount=amount; }
       else { (S().recurring||[]).push({id:uuid(), name, amount}); }
-      saveRoot(); renderAll(); toast('חיוב חודשי נשמר'); e.currentTarget.reset();
+      propagateRecurringForward(); saveRoot(); renderAll(); toast('חיוב חודשי נשמר'); e.currentTarget.reset();
     });
 
-    // pension form
+    // פנסיה
     document.getElementById('formPensionAdd')?.addEventListener('submit', e=>{
       e.preventDefault();
       const f=e.currentTarget;
@@ -1090,7 +1195,15 @@
       f.reset();
     });
 
-    // savings forms (הערה 10 – נשמרים קדימה דרך ensureMonth)
+    // פיקדון – הפעלת/כיבוי הפקדה חודשית
+    document.getElementById('depHasMonthly')?.addEventListener('change', (e)=>{
+      const on = e.currentTarget.checked;
+      const inp = document.getElementById('depAdd');
+      inp.disabled = !on;
+      if(!on) inp.value='';
+    });
+
+    // חיסכון – שמירות + הפצה קדימה
     document.getElementById('formKeren')?.addEventListener('submit', e=>{
       e.preventDefault();
       const n=document.getElementById('krName').value.trim();
@@ -1099,17 +1212,19 @@
       if(!n){toast('שם קרן נדרש');return;}
       const ex=(S().savings.krans||[]).find(x=>x.name===n);
       if(ex){ ex.balance=b; ex.monthly=m; } else { S().savings.krans.push({id:uuid(), name:n, balance:b, monthly:m}); }
-      saveRoot(); renderAll(); toast('קרן השתלמות נשמרה'); e.currentTarget.reset();
+      propagateSavingsForward(); saveRoot(); renderAll(); toast('קרן השתלמות נשמרה'); e.currentTarget.reset();
     });
     document.getElementById('formDeposit')?.addEventListener('submit', e=>{
       e.preventDefault();
       const n=document.getElementById('depName').value.trim();
       const b=toNumber(document.getElementById('depBalance').value);
-      const m=toNumber(document.getElementById('depAdd').value);
+      const hasM = document.getElementById('depHasMonthly').checked;
+      const m= hasM ? toNumber(document.getElementById('depAdd').value) : 0;
       if(!n){toast('שם חשבון נדרש');return;}
       const ex=(S().savings.deposits||[]).find(x=>x.name===n);
-      if(ex){ ex.balance=b; ex.monthly=m; } else { S().savings.deposits.push({id:uuid(), name:n, balance:b, monthly:m}); }
-      saveRoot(); renderAll(); toast('פיקדון נשמר'); e.currentTarget.reset();
+      if(ex){ ex.balance=b; ex.monthly=hasM?m:0; } else { S().savings.deposits.push({id:uuid(), name:n, balance:b, monthly:hasM?m:0}); }
+      propagateSavingsForward(); saveRoot(); renderAll(); toast('פיקדון נשמר'); e.currentTarget.reset();
+      document.getElementById('depHasMonthly').checked=false; document.getElementById('depAdd').disabled=true; document.getElementById('depAdd').value='';
     });
     document.getElementById('formGoal')?.addEventListener('submit', e=>{
       e.preventDefault();
@@ -1120,7 +1235,7 @@
       const ex=(S().savings.goals||[]).find(x=>x.name===n);
       if(ex){ ex.target=t; ex.monthly=m; ex.balance=ex.balance||0; }
       else { S().savings.goals.push({id:uuid(), name:n, target:t, monthly:m, balance:0}); }
-      saveRoot(); renderAll(); toast('תכנית חיסכון נשמרה'); e.currentTarget.reset();
+      propagateSavingsForward(); saveRoot(); renderAll(); toast('תכנית חיסכון נשמרה'); e.currentTarget.reset();
     });
 
     // מודל עריכה
@@ -1130,48 +1245,30 @@
     document.getElementById('editDelete')?.addEventListener('click', ()=> deleteRow(document.getElementById('editId').value));
     document.getElementById('editType')?.addEventListener('change', toggleEditCategoryVisibility);
 
-    // month picker events
+    // חודש
     document.getElementById('btnMonthPicker')?.addEventListener('click', openMonthPicker);
     document.getElementById('mpClose')?.addEventListener('click', ()=> toggleMP(false));
-
-    // Quick bar nav (הערה 11)
-    function setQuickActive(which){
-      document.getElementById('navHome').classList.toggle('btn-prim', which==='home');
-      document.getElementById('navHome').classList.toggle('btn-ghost', which!=='home');
-      document.getElementById('navPetty').classList.toggle('btn-prim', which==='petty');
-      document.getElementById('navPetty').classList.toggle('btn-ghost', which!=='petty');
-      document.getElementById('navNotes').classList.toggle('btn-prim', which==='notes');
-      document.getElementById('navNotes').classList.toggle('btn-ghost', which!=='notes');
+    function openMonthPicker(){
+      const grid = document.getElementById('mpGrid');
+      grid.innerHTML='';
+      const start = new Date(2025,7,1);
+      const end = new Date(new Date().getFullYear(), new Date().getMonth()+11, 1);
+      for(let d=new Date(start); d<=end; d.setMonth(d.getMonth()+1)){
+        const key=ym(d);
+        const b=document.createElement('button');
+        b.type='button';
+        b.className='btn btn-ghost text-xs py-2';
+        b.textContent=d.toLocaleDateString('he-IL',{month:'long',year:'2-digit'});
+        b.addEventListener('click',()=>{ ROOT.current=key; ensureMonth(key); saveRoot(); syncTodayInputs(); renderAll(); toggleMP(false); });
+        grid.appendChild(b);
+      }
+      toggleMP(true);
     }
-    function showPanel(id){
-      ['home','expenses','savings'].forEach(v=>{
-        const p = document.querySelector(`[data-view-panel="${v}"]`);
-        if(p) p.classList.toggle('hidden', id!==v);
-      });
-      ['petty','notes'].forEach(v=>{
-        const p = document.querySelector(`[data-view-panel="${v}"]`);
-        if(p) p.classList.toggle('hidden', id!==v);
-      });
-      setQuickActive(id);
+    function toggleMP(show){
+      const m=document.getElementById('monthPicker');
+      if(show){m.classList.remove('hidden'); m.classList.add('flex');}
+      else {m.classList.add('hidden'); m.classList.remove('flex');}
     }
-    document.getElementById('navHome')?.addEventListener('click', ()=> showPanel('home'));
-    document.getElementById('navPetty')?.addEventListener('click', ()=> showPanel('petty'));
-    document.getElementById('navNotes')?.addEventListener('click', ()=> showPanel('notes'));
-
-    // קופה קטנה – אירועים
-    document.getElementById('pettyBudgetBtn')?.addEventListener('click', ()=>{
-      const val = prompt('הזן תקציב לקופה קטנה', ROOT.petty.budgetCap||0);
-      if(val!==null){ ROOT.petty.budgetCap = toNumber(val); saveRoot(); renderPetty(); toast('תקציב קופה עודכן'); }
-    });
-    document.getElementById('formPettyExpense')?.addEventListener('submit', e=>{
-      e.preventDefault();
-      const a = toNumber(document.getElementById('pettyAmount').value);
-      const m = String(document.getElementById('pettyMerchant').value||'').slice(0,80);
-      const c = String(document.getElementById('pettyCat').value||'').slice(0,60);
-      const d = new Date(document.getElementById('pettyDate').value||new Date());
-      ROOT.petty.transactions.unshift({id:uuid(), amount:a, merchant:m, category:c, date:d.toISOString()});
-      saveRoot(); renderPetty(); e.currentTarget.reset(); toast('הוצאה לקופה נוספה');
-    });
 
     // הערות – אירועים
     document.getElementById('formNote')?.addEventListener('submit', e=>{
@@ -1180,8 +1277,10 @@
       const body  = document.getElementById('noteBody').value.trim();
       const due   = document.getElementById('noteDue').value ? new Date(document.getElementById('noteDue').value).toISOString() : '';
       ROOT.notes.unshift({id:uuid(), title, body, due, done:false});
-      saveRoot(); renderNotes(); e.currentTarget.reset(); toast('הערה נשמרה');
+      saveRoot(); renderNotes(); buildCalendar(); e.currentTarget.reset(); toast('הערה נשמרה');
     });
+    document.getElementById('calPrev')?.addEventListener('click', ()=>{ calendarCursor.setMonth(calendarCursor.getMonth()-1); buildCalendar(); });
+    document.getElementById('calNext')?.addEventListener('click', ()=>{ calendarCursor.setMonth(calendarCursor.getMonth()+1); buildCalendar(); });
 
     function syncTodayInputs(){
       const d = new Date(ROOT.current+'-01');
@@ -1195,7 +1294,7 @@
       initCategorySelects();
       syncTodayInputs();
       renderAll();
-      showPanel('home'); // QuickBar ברירת מחדל
+      showPanel('home'); // QuickBar default
     }
 
     initUI();
