@@ -1,19 +1,27 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>BOX – v10 Mobile (iPhone 14)</title>
-<script>
-  /* ========= CLOUD SYNC (Supabase) ========= */
-  const SUPABASE_URL  = 'https://zxzopuruaccfjfhrjxqg.supabase.co';
-  const SUPABASE_ANON = 'eyJhbGciOiJI...';
-  const HOUSEHOLD_ID  = 'idan-lital';  // מזהה בית
-</script>
+  <title>ארנק חכם – v10 Mobile (iPhone 14)</title>
+
+  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- ========= Supabase SDK ========= -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- ========= Supabase Config (הערכים שנתת) ========= -->
+  <script>
+    const SUPABASE_URL  = 'https://zxzopuruaccfjfhrjxqg.supabase.co';
+    const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp4em9wdXJ1YWNjZmpmaHJqeHFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUzMzgwMTUsImV4cCI6MjA3MDkxNDAxNX0.Fk80JHLEFe4W1UDGRABnxRqI1roDOv2dNGOLKqmRV5k';
+    const HOUSEHOLD_ID  = 'idan-lital'; // מזהה משותף לשני המכשירים
+  </script>
+
   <style>
     :root{
       --card:#111827; /* dark slate-900 */
@@ -347,6 +355,9 @@
   </div>
 
   <script>
+    /* ========= חיבור ל-Supabase בתוך הסקריפט הראשי ========= */
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
     /* ========= UTIL ========= */
     const ILS = new Intl.NumberFormat('he-IL',{ style:'currency', currency:'ILS', minimumFractionDigits:0, maximumFractionDigits:0 });
     const ils = n => ILS.format(Math.round(Number(n||0)));
@@ -370,7 +381,7 @@
     const VARIABLE = ["מזון","מסעדות/בילויים/חיי לילה","קניות/אופנה","פארם/טיפוח","שונות","מתנות","תחבורה ציבורית/מוניות","נסיעות/טיסות","תחזוקת בית","בריאות/תרופות"];
     const CATEGORIES = [...new Set([ ...FIXED, ...VARIABLE ])];
 
-    /* ========= STORAGE ========= */
+    /* ========= STORAGE (הקיים – נשאר) ========= */
     const ROOT_KEY = 'smartwallet_v10_root';
     function defaultMonthState(){
       return {
@@ -391,6 +402,55 @@
     if(!ROOT.months) ROOT.months = {};
     if(!ROOT.current) ROOT.current = '2025-08';
     ensureMonth(ROOT.current); saveRoot();
+
+    /* ========= CLOUD SYNC ADDON (תוספת – לא מוחק לוקאלי) ========= */
+    async function loadRootFromCloud() {
+      try {
+        const { data, error } = await sb
+          .from('wallet')
+          .select('data')
+          .eq('household', HOUSEHOLD_ID)
+          .maybeSingle();
+        if (error) { console.warn('[cloud] load error:', error); return null; }
+        return data?.data || null;
+      } catch (e) { console.warn('[cloud] load exception:', e); return null; }
+    }
+
+    let __cloudSaveTimer = null;
+    async function saveRootToCloudNow() {
+      try {
+        const { error } = await sb.from('wallet').upsert({ household: HOUSEHOLD_ID, data: ROOT });
+        if (error) console.warn('[cloud] save error:', error);
+      } catch (e) { console.warn('[cloud] save exception:', e); }
+    }
+    function saveRootToCloud() {
+      if (__cloudSaveTimer) clearTimeout(__cloudSaveTimer);
+      __cloudSaveTimer = setTimeout(saveRootToCloudNow, 300);
+    }
+    const __origSaveRoot = saveRoot;
+    saveRoot = function () {
+      __origSaveRoot();
+      saveRootToCloud();
+    };
+
+    (async function initCloudSync(){
+      const cloud = await loadRootFromCloud();
+      if (cloud && typeof cloud === 'object' && Object.keys(cloud).length) {
+        ROOT = cloud;
+        if(!ROOT.months) ROOT.months = {};
+        if(!ROOT.current) ROOT.current = '2025-08';
+        ensureMonth(ROOT.current);
+        try { renderAll && renderAll(); } catch {}
+      } else {
+        // אין בענן – נעלה את המקומי
+        await saveRootToCloudNow();
+      }
+      try {
+        const { data, error } = await sb.from('wallet').select('household').eq('household', HOUSEHOLD_ID).maybeSingle();
+        if (error) console.warn('Supabase check error:', error);
+        else console.log('Supabase ready for household:', data?.household || HOUSEHOLD_ID);
+      } catch {}
+    })();
 
     /* ========= MONTH UI ========= */
     function monthLabel(key){ const d=new Date(key+'-01'); return d.toLocaleDateString('he-IL',{month:'long',year:'numeric'}); }
@@ -585,7 +645,8 @@
       const ul=document.getElementById('fixedList'); if(!ul) return; ul.innerHTML='';
       S().recurring.forEach(r=>{
         const li=document.createElement('li'); li.className='row card p-3 flex items-center justify-between';
-        li.innerHTML=`<div>
+        li.innerHTML=`
+          <div>
             <div class="font-medium">${esc(r.name)}</div>
             <div class="text-xs text-slate-500">מ-${new Date(r.start).toLocaleDateString('he-IL')}${r.until? ' עד '+new Date(r.until).toLocaleDateString('he-IL'):''}</div>
           </div>
@@ -937,21 +998,8 @@
       syncTodayInputs();
       renderAll();
     }
+
     initUI();
-<script>
-  // === התחברות לסופאבייס ===
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
-
-  // בדיקה – שליפת נתונים מטבלה לדוגמה
-  async function testConnection() {
-    const { data, error } = await supabase.from('wallet').select('*'); // שים לב לשם הטבלה!
-    if (error) {
-      console.error('שגיאה בחיבור:', error);
-    } else {
-      console.log('חיבור הצליח! נתונים:', data);
-    }
-  }
-  testConnection();
-</script>
+  </script>
+</body>
 </html>
-
