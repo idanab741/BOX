@@ -107,6 +107,13 @@
             <button class="btn btn-prim">שמור</button>
           </div>
         </form>
+
+        <!-- ===== NEW: עובר ושב (מופיע רק כשאין תקציב) ===== -->
+        <div id="overdraftRow" class="mt-3 flex items-center justify-between">
+          <span class="text-slate-400 text-sm">עובר ושב</span>
+          <span id="overdraftVal" class="font-semibold">₪0</span>
+        </div>
+        <!-- ===== END NEW ===== -->
       </section>
 
       <!-- KPIs -->
@@ -122,6 +129,10 @@
       <!-- Gauge -->
       <section class="grid grid-cols-1 gap-4">
         <div class="card p-4" role="region" aria-label="ניצול חודשי">
+          <!-- ===== NEW: כפתור עובר ושב (נראה רק כשיש תקציב) ===== -->
+          <button id="btnOverdraft" class="hidden chip text-xs mb-2" type="button">עובר ושב ▾</button>
+          <!-- ===== END NEW ===== -->
+
           <div class="flex items-center justify-between mb-2">
             <span class="chip text-[.7rem]">ניצול חודשי</span>
             <span id="gaugePctText" class="text-xs font-bold">0%</span>
@@ -280,7 +291,7 @@
       <div id="sav-goal" data-subpanel="sav-goal" class="space-y-3 hidden">
         <div class="card p-4">
           <h3 class="text-[.95rem] font-semibold mb-3">תכנית חיסכון ייעודית</h3>
-          <form id="formGoal" class="grid grid-cols-2 gap-2 mb-2">
+        <form id="formGoal" class="grid grid-cols-2 gap-2 mb-2">
             <input id="goalName" class="input col-span-2" placeholder="מטרה (חופשה/ירח דבש/הוצאה מסוימת)" />
             <input id="goalTarget" class="input text-right" inputmode="decimal" placeholder="יעד ₪" />
             <input id="goalMonthly" class="input text-right" inputmode="decimal" placeholder="הפקדה חודשית" />
@@ -386,6 +397,7 @@
     function defaultMonthState(){
       return {
         totalBudget: 0,
+        overdraft: 0,          // ===== NEW: עובר ושב פר חודש =====
         transactions: [],      // {id,date,type:'income'|'expense',amount,gross?,category,merchant}
         pensions: [],          // {id,owner,balance,monthly,lastUpdate}
         recurring: [],         // {id,name,amount,start,until}
@@ -394,7 +406,47 @@
     }
     function loadRoot(){ try{ return JSON.parse(localStorage.getItem(ROOT_KEY)) || {}; } catch{ return {}; } }
     function saveRoot(){ localStorage.setItem(ROOT_KEY, JSON.stringify(ROOT)); }
-    function ensureMonth(key){ if(!ROOT.months[key]) ROOT.months[key] = defaultMonthState(); }
+
+    // ===== NEW: עזרי חודשים לחישוב גלגול עובר-ושב =====
+    function prevMonthKey(key){
+      const [y,m] = key.split('-').map(Number);
+      const d = new Date(y, m-2, 1);
+      return ym(d);
+    }
+    function isSameMonth(iso, key=ROOT.current){
+      const d=new Date(iso); const [y,m]=key.split('-').map(Number);
+      return d.getFullYear()===y && (d.getMonth()+1)===m;
+    }
+    function monthlyTotalsFor(key){
+      const state = ROOT.months[key] || defaultMonthState();
+      // totals per selected month
+      let net=0, gross=0, exp=0;
+      for(const t of state.transactions||[]){
+        if(!isSameMonth(t.date, key)) continue;
+        if(t.type==='income'){ net += toNumber(t.amount); gross += toNumber(t.gross || t.amount); }
+        else { exp += toNumber(t.amount); }
+      }
+      // fixed this month
+      const d = new Date(key+'-01');
+      const fixed = (state.recurring||[]).filter(r=>{
+        const s=new Date(r.start); const u=r.until? new Date(r.until):null;
+        return s <= d && (!u || u >= d);
+      }).reduce((s,r)=> s + toNumber(r.amount||0), 0);
+      return { net, gross, exp, fixed, surplus: net - (exp + fixed) };
+    }
+
+    function ensureMonth(key){
+      if(!ROOT.months[key]){
+        ROOT.months[key] = defaultMonthState();
+        // ===== NEW: גלגול עובר ושב מחודש קודם + העודף שהוצג בו =====
+        const pk = prevMonthKey(key);
+        const prev = ROOT.months[pk];
+        if (prev){
+          const { surplus } = monthlyTotalsFor(pk);
+          ROOT.months[key].overdraft = toNumber(prev.overdraft||0) + surplus;
+        }
+      }
+    }
     function S(){ return ROOT.months[ROOT.current]; }
 
     /* Initialize starting at Aug 2025 */
@@ -467,7 +519,7 @@
         btn.className = 'chip ' + (key===ROOT.current? 'bg-emerald-900 text-emerald-200' : '');
         btn.textContent = d.toLocaleDateString('he-IL',{month:'short', year:'2-digit'});
         btn.setAttribute('data-key', key);
-        btn.addEventListener('click', ()=>{ ROOT.current=key; saveRoot(); syncTodayInputs(); renderAll(); highlightMonthChip(); });
+        btn.addEventListener('click', ()=>{ ROOT.current=key; ensureMonth(key); saveRoot(); syncTodayInputs(); renderAll(); highlightMonthChip(); });
         WR.appendChild(btn);
       }
       highlightMonthChip();
@@ -491,7 +543,7 @@
         b.type='button';
         b.className='btn btn-ghost';
         b.textContent=d.toLocaleDateString('he-IL',{month:'long',year:'2-digit'});
-        b.addEventListener('click',()=>{ ROOT.current=key; saveRoot(); renderAll(); toggleMP(false); });
+        b.addEventListener('click',()=>{ ROOT.current=key; ensureMonth(key); saveRoot(); renderAll(); toggleMP(false); });
         grid.appendChild(b);
       }
       toggleMP(true);
@@ -503,7 +555,7 @@
     }
 
     /* ========= HELPERS ========= */
-    const isSameMonth = (iso, key=ROOT.current) => { const d=new Date(iso); const [y,m]=key.split('-').map(Number); return d.getFullYear()===y && (d.getMonth()+1)===m; };
+    // isSameMonth הועבר למעלה לשימושים כלליים
 
     /* ========= GAUGE ========= */
     const gaugeColor = (p) => p<=0.75? 'var(--accent)' : p<=0.9? 'var(--warn)' : p<=1.0? '#f97316' : 'var(--danger)';
@@ -720,6 +772,24 @@
       const left  = (S().totalBudget||0) - spent;
       const pct   = S().totalBudget>0 ? spent/S().totalBudget : 0;
       setGauge(pct, spent, left);
+
+      // ===== NEW: הצגת/הסתרת עובר ושב =====
+      const overdraftRow = document.getElementById('overdraftRow');
+      const overdraftBtn = document.getElementById('btnOverdraft');
+      if (S().totalBudget > 0) {
+        if (overdraftRow) overdraftRow.classList.add('hidden');
+        if (overdraftBtn) {
+          overdraftBtn.classList.remove('hidden');
+          overdraftBtn.textContent = 'עובר ושב: ' + ils(S().overdraft || 0) + ' ▾';
+        }
+      } else {
+        if (overdraftRow) {
+          overdraftRow.classList.remove('hidden');
+          const v = document.getElementById('overdraftVal'); if (v) v.textContent = ils(S().overdraft || 0);
+        }
+        if (overdraftBtn) overdraftBtn.classList.add('hidden');
+      }
+      // ===== END NEW =====
     }
 
     function renderAll(){
@@ -796,7 +866,8 @@
       saveRoot(); renderAll(); toast('עודכן'); toggleModal(false);
     }
     function deleteRow(id){
-      const idx = S().transactions.findIndex(x=> x.id===id); if(idx<0) return;
+      const idx = S().transactions.findIndex(x=> x.id===id);
+      if(idx<0) return;
       S().transactions.splice(idx,1); saveRoot(); renderAll(); toast('נמחק'); toggleModal(false);
     }
 
@@ -847,6 +918,16 @@
       S().totalBudget=v; saveRoot(); renderAll(); toast('התקציב עודכן');
       e.currentTarget.reset();
     });
+
+    // ===== NEW: כפתור עריכת עובר ושב (כאשר יש תקציב) =====
+    document.getElementById('btnOverdraft')?.addEventListener('click', () => {
+      const newVal = prompt('הזן סכום עובר ושב', S().overdraft || 0);
+      if (newVal !== null) {
+        S().overdraft = toNumber(newVal);
+        saveRoot(); renderAll(); toast('עודכן עובר ושב');
+      }
+    });
+    // ===== END NEW =====
 
     // income add
     document.getElementById('btnAddIncomeInline')?.addEventListener('click', ()=>{
