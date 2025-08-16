@@ -1,9 +1,16 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>ארנק חכם – v10 Mobile (iPhone 14)</title>
+  <title>BOX – v10 Mobile (iPhone 14)</title>
+<script>
+  /* ========= CLOUD SYNC (Supabase) ========= */
+  const SUPABASE_URL  = 'https://zxzopuruaccfjfhrjxqg.supabase.co';
+  const SUPABASE_ANON = 'eyJhbGciOiJI...';
+  const HOUSEHOLD_ID  = 'idan-lital';  // מזהה בית
+</script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -930,8 +937,21 @@
       syncTodayInputs();
       renderAll();
     }
-
     initUI();
-  </script>
-</body>
+<script>
+  // === התחברות לסופאבייס ===
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+  // בדיקה – שליפת נתונים מטבלה לדוגמה
+  async function testConnection() {
+    const { data, error } = await supabase.from('wallet').select('*'); // שים לב לשם הטבלה!
+    if (error) {
+      console.error('שגיאה בחיבור:', error);
+    } else {
+      console.log('חיבור הצליח! נתונים:', data);
+    }
+  }
+  testConnection();
+</script>
 </html>
+
