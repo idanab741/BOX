@@ -398,6 +398,11 @@
       </form>
       <ul id="pettyList" class="text-[.92rem] space-y-1 max-h-[60vh] overflow-auto mt-1"></ul>
     </div>
+
+    <!-- FOOTER בתוך קופה קטנה -->
+    <footer class="text-center text-[.7rem] text-slate-500 py-6">
+      v10 • מובייל (iPhone 14) • כל חודש נשמר בנפרד • RTL • Dark
+    </footer>
   </section>
 
   <!-- VIEW: NOTES -->
@@ -434,6 +439,11 @@
       <h4 class="text-sm text-slate-300 mt-2">הערות לתאריך נבחר</h4>
       <ul id="notesDay" class="space-y-2"></ul>
     </div>
+
+    <!-- FOOTER בתוך הערות -->
+    <footer class="text-center text-[.7rem] text-slate-500 py-6">
+      v10 • מובייל (iPhone 14) • כל חודש נשמר בנפרד • RTL • Dark
+    </footer>
   </section>
 
   <script>
@@ -860,8 +870,12 @@
 
       const fixedThisMonth = (S().recurring||[]).reduce((s,r)=> s + toNumber(r.amount||0), 0);
       const spent = t.exp + fixedThisMonth;
-      const surplus = t.net - spent;
+
+      // *** עודף: רק הכנסות נטו פחות התקציב החודשי ***
+      const budget = toNumber(S().totalBudget || 0);
+      const surplus = toNumber(t.net) - budget;
       document.getElementById('kpiSurplus').textContent = ils(surplus);
+
       document.getElementById('kpiCurExp').textContent  = ils(t.exp);
       document.getElementById('kpiOverdraft').textContent = ils(S().overdraft||0);
 
@@ -1241,7 +1255,7 @@
     });
     document.getElementById('catSelect')?.addEventListener('change', updateCatBadge);
 
-    // קבועות — מיזוג פריטים/הערות תחת אותה קטגוריה + הפצה קדימה
+    // *** קבועות — "מנויים" מרובה פריטים, האחרים מתנהגים כקיים (איחוד לפי שם) ***
     document.getElementById('formFixedAdd')?.addEventListener('submit', e=>{
       e.preventDefault();
       const name=document.getElementById('fixName').value;
@@ -1251,21 +1265,33 @@
       if(!name){ toast('שם נדרש'); return; }
       if(amountVal<=0 && !noteRaw){ toast('הזן/י סכום או הערה'); return; }
 
-      const ex=(S().recurring||[]).find(r=>r.name===name);
-      if(ex){
-        // עדכון סכום רק אם חיובי
-        if(amountVal>0) ex.amount=amountVal;
+      const allowMulti = (name === 'מנויים');
 
-        // מיזוג הערות/פריטים
-        if(noteRaw){
-          const curItems = parseNoteItems(ex.note);
-          const newItems = parseNoteItems(noteRaw);
-          const merged = Array.from(new Set([...curItems, ...newItems]));
-          ex.note = merged.join(', ');
-        }
+      if (allowMulti){
+        // לכל מנוי נוצר פריט חדש נפרד
+        (S().recurring||[]).push({
+          id: uuid(),
+          name,
+          amount: Math.max(0, amountVal),
+          note: noteRaw
+        });
       } else {
-        (S().recurring||[]).push({id:uuid(), name, amount: amountVal>0?amountVal:0, note: noteRaw});
+        // איחוד לפי שם (התנהגות קודמת)
+        const ex=(S().recurring||[]).find(r=>r.name===name);
+        if(ex){
+          if(amountVal>0) ex.amount=amountVal;
+
+          if(noteRaw){
+            const curItems = parseNoteItems(ex.note);
+            const newItems = parseNoteItems(noteRaw);
+            const merged = Array.from(new Set([...curItems, ...newItems]));
+            ex.note = merged.join(', ');
+          }
+        } else {
+          (S().recurring||[]).push({id:uuid(), name, amount: amountVal>0?amountVal:0, note: noteRaw});
+        }
       }
+
       propagateRecurringForward(); saveRoot(); renderAll(); toast('חיוב חודשי נשמר'); e.currentTarget.reset();
     });
 
