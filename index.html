@@ -128,7 +128,7 @@
           <div class="flex items-center justify-end mb-2">
             <button id="btnBudgetQuickEdit" class="chip text-xs" type="button">תקציב חודשי ▾</button>
           </div>
-        <div class="relative w-full" style="aspect-ratio:2/1" aria-hidden="true">
+          <div class="relative w-full" style="aspect-ratio:2/1" aria-hidden="true">
             <svg id="gsvg" class="absolute inset-0" viewBox="0 0 100 60" preserveAspectRatio="xMidYMid meet">
               <path id="gTrack" d="M10,50 A40,40 0 0 1 90,50" fill="none" stroke="#1f2937" stroke-width="12" stroke-linecap="round"/>
               <path id="gValue" d="M10,50 A40,40 0 0 1 90,50" fill="none" stroke="var(--accent)" stroke-width="12" stroke-linecap="round" stroke-dasharray="0 999"/>
@@ -222,8 +222,7 @@
               <option>רכב – ביטוח/טסט/דלק</option><option>מנויים</option><option>חינוך/גן</option><option>אחר</option>
             </select>
             <input id="fixAmount" class="input text-right" placeholder="סכום" inputmode="decimal" />
-            <!-- הערה/פירוט — אפשר להזין כמה פריטים בפסיקים או בשורות נפרדות -->
-            <input id="fixNote" class="input col-span-2" placeholder="הערה / פירוט (פריטים מופרדים בפסיקים או שורות)" />
+            <input id="fixNote" class="input col-span-2" placeholder="הערה / פירוט (למשל: ״Netflix 42, Spotify 22״)" />
             <button class="btn btn-prim col-span-2" type="submit">הוסף</button>
           </form>
           <ul id="fixedList" class="space-y-2"></ul>
@@ -399,7 +398,7 @@
       <ul id="pettyList" class="text-[.92rem] space-y-1 max-h-[60vh] overflow-auto mt-1"></ul>
     </div>
 
-    <!-- FOOTER בתוך קופה קטנה -->
+    <!-- FOOTER בתוך קופה קטנה — בסוף העמוד -->
     <footer class="text-center text-[.7rem] text-slate-500 py-6">
       v10 • מובייל (iPhone 14) • כל חודש נשמר בנפרד • RTL • Dark
     </footer>
@@ -440,7 +439,7 @@
       <ul id="notesDay" class="space-y-2"></ul>
     </div>
 
-    <!-- FOOTER בתוך הערות -->
+    <!-- FOOTER בתוך הערות — בסוף העמוד -->
     <footer class="text-center text-[.7rem] text-slate-500 py-6">
       v10 • מובייל (iPhone 14) • כל חודש נשמר בנפרד • RTL • Dark
     </footer>
@@ -460,7 +459,7 @@
     const uuid = () => (crypto?.randomUUID?.() || 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0,v=c==='x'?r:(r&0x3|0x8);return v.toString(16);} ));
     const esc = (s) => String(s).replace(/[&<>\"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[m]));
 
-    // NEW: פירוק הערות לפריטים (פסיקים או שורות), ניקוי וטרים
+    // פירוק הערות לפירוט
     function parseNoteItems(txt){
       return String(txt||'')
         .split(/\n|,/g)
@@ -488,8 +487,8 @@
         overdraft: 0,
         transactions: [],
         pensions: [],
-        recurring: [],
-        savings:{ krans:[], deposits:[], goals:[] } // שים לב: פנסיה נפרד
+        recurring: [],            // רשימת חיובים קבועים (כמה שרוצים לכל שם)
+        savings:{ krans:[], deposits:[], goals:[] }
       };
     }
     function loadRoot(){ try{ return JSON.parse(localStorage.getItem(ROOT_KEY)) || {}; } catch{ return {}; } }
@@ -779,8 +778,7 @@
         li.innerHTML=`
           <div>
             <div class="font-medium">${esc(r.name)}</div>
-            <div class="text-xs text-slate-500">חיוב חודשי פעיל</div>
-            ${r.note ? `<div class="text-xs text-slate-500 mt-0.5">${esc(r.note)}</div>` : ''}
+            ${r.note ? `<div class="text-xs text-slate-500 mt-0.5">${esc(r.note)}</div>` : '<div class="text-xs text-slate-500">חיוב חודשי פעיל</div>'}
           </div>
           <div class="flex items-center gap-3">
             <div class="text-sm">${ils(r.amount)} לחודש</div>
@@ -871,7 +869,7 @@
       const fixedThisMonth = (S().recurring||[]).reduce((s,r)=> s + toNumber(r.amount||0), 0);
       const spent = t.exp + fixedThisMonth;
 
-      // *** עודף: רק הכנסות נטו פחות התקציב החודשי ***
+      // עודף: הכנסות נטו פחות תקציב
       const budget = toNumber(S().totalBudget || 0);
       const surplus = toNumber(t.net) - budget;
       document.getElementById('kpiSurplus').textContent = ils(surplus);
@@ -918,7 +916,7 @@
     }
 
     /* ==== NOTES + CALENDAR ==== */
-    let calendarCursor = new Date(); // מציג חודש ללוח שנה
+    let calendarCursor = new Date();
     let selectedDay = null;
 
     function startOfMonth(d){ return new Date(d.getFullYear(), d.getMonth(), 1); }
@@ -995,7 +993,7 @@
       const e = endOfMonth(calendarCursor);
       title.textContent = s.toLocaleDateString('he-IL',{month:'long', year:'numeric'});
 
-      // NEW: Sunday-first (א׳=0 ... ש׳=6)
+      // Sunday-first (א׳=0 .. ש׳=6)
       const startWeekday = s.getDay();
       const totalDays = e.getDate();
 
@@ -1232,7 +1230,7 @@
       f.reset(); f.classList.add('hidden');
     });
 
-    // הוצאות
+    // הוצאות משתנות
     document.getElementById('formExpense')?.addEventListener('submit', e=>{
       e.preventDefault();
       const f=e.currentTarget;
@@ -1247,7 +1245,7 @@
       f.reset(); updateCatBadge();
     });
 
-    // מסנני הוצאות
+    // מסנני הוצאות משתנות
     ['filterText','filterCat','filterFrom','filterTo','sortBy'].forEach(id=>{
       const el=document.getElementById(id); if(!el) return;
       el.addEventListener('input', renderExpensesList);
@@ -1255,7 +1253,7 @@
     });
     document.getElementById('catSelect')?.addEventListener('change', updateCatBadge);
 
-    // *** קבועות — "מנויים" מרובה פריטים, האחרים מתנהגים כקיים (איחוד לפי שם) ***
+    // *** הוצאות קבועות — תמיד מוסיף רשומה חדשה (לא דריסה) ***
     document.getElementById('formFixedAdd')?.addEventListener('submit', e=>{
       e.preventDefault();
       const name=document.getElementById('fixName').value;
@@ -1265,34 +1263,15 @@
       if(!name){ toast('שם נדרש'); return; }
       if(amountVal<=0 && !noteRaw){ toast('הזן/י סכום או הערה'); return; }
 
-      const allowMulti = (name === 'מנויים');
+      // אין איחוד לפי שם — כל שליחה יוצרת פריט חדש
+      (S().recurring||[]).push({
+        id: uuid(),
+        name,
+        amount: Math.max(0, amountVal),
+        note: noteRaw
+      });
 
-      if (allowMulti){
-        // לכל מנוי נוצר פריט חדש נפרד
-        (S().recurring||[]).push({
-          id: uuid(),
-          name,
-          amount: Math.max(0, amountVal),
-          note: noteRaw
-        });
-      } else {
-        // איחוד לפי שם (התנהגות קודמת)
-        const ex=(S().recurring||[]).find(r=>r.name===name);
-        if(ex){
-          if(amountVal>0) ex.amount=amountVal;
-
-          if(noteRaw){
-            const curItems = parseNoteItems(ex.note);
-            const newItems = parseNoteItems(noteRaw);
-            const merged = Array.from(new Set([...curItems, ...newItems]));
-            ex.note = merged.join(', ');
-          }
-        } else {
-          (S().recurring||[]).push({id:uuid(), name, amount: amountVal>0?amountVal:0, note: noteRaw});
-        }
-      }
-
-      propagateRecurringForward(); saveRoot(); renderAll(); toast('חיוב חודשי נשמר'); e.currentTarget.reset();
+      propagateRecurringForward(); saveRoot(); renderAll(); toast('חיוב קבוע נוסף'); e.currentTarget.reset();
     });
 
     // פנסיה – כבר קיים: formPensionAdd / upsertPension
