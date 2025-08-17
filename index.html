@@ -115,9 +115,7 @@
           <div class="kpi flex items-center justify-between"><span class="text-slate-400">הוצאות</span><b id="kpiCurExp">₪0</b></div>
           <div class="kpi flex items-center justify-between"><span class="text-slate-400">תקציב</span><b id="kpiBudget">₪0</b></div>
           <div class="kpi flex items-center justify-between"><span class="text-slate-400">עודף</span><b id="kpiSurplus">₪0</b></div>
-          <!-- במקום 'נטו' → עו"ש -->
           <div class="kpi flex items-center justify-between"><span class="text-slate-400">עו"ש</span><b id="kpiOverdraft">₪0</b></div>
-          <!-- חיסכון (ללא פנסיה) + פנסיה כ־KPI נפרד -->
           <div class="kpi flex items-center justify-between"><span class="text-slate-400">חיסכון</span><b id="kpiSavingsTotal">₪0</b></div>
           <div class="kpi flex items-center justify-between"><span class="text-slate-400">פנסיה</span><b id="kpiPensionTotal">₪0</b></div>
         </div>
@@ -130,7 +128,7 @@
           <div class="flex items-center justify-end mb-2">
             <button id="btnBudgetQuickEdit" class="chip text-xs" type="button">תקציב חודשי ▾</button>
           </div>
-          <div class="relative w-full" style="aspect-ratio:2/1" aria-hidden="true">
+        <div class="relative w-full" style="aspect-ratio:2/1" aria-hidden="true">
             <svg id="gsvg" class="absolute inset-0" viewBox="0 0 100 60" preserveAspectRatio="xMidYMid meet">
               <path id="gTrack" d="M10,50 A40,40 0 0 1 90,50" fill="none" stroke="#1f2937" stroke-width="12" stroke-linecap="round"/>
               <path id="gValue" d="M10,50 A40,40 0 0 1 90,50" fill="none" stroke="var(--accent)" stroke-width="12" stroke-linecap="round" stroke-dasharray="0 999"/>
@@ -224,7 +222,9 @@
               <option>רכב – ביטוח/טסט/דלק</option><option>מנויים</option><option>חינוך/גן</option><option>אחר</option>
             </select>
             <input id="fixAmount" class="input text-right" placeholder="סכום" inputmode="decimal" />
-            <button class="btn btn-prim col-span-2" type="submit">הוסף/עדכן</button>
+            <!-- חדש: הערה/פירוט -->
+            <input id="fixNote" class="input col-span-2" placeholder="הערה / פירוט (אופציונלי)" />
+            <button class="btn btn-prim col-span-2" type="submit">הוסף</button>
           </form>
           <ul id="fixedList" class="space-y-2"></ul>
         </div>
@@ -260,7 +260,11 @@
           <form id="formKeren" class="grid grid-cols-2 gap-2 mb-2">
             <input id="krName" class="input col-span-2" placeholder="שם הקרן" />
             <input id="krBalance" class="input text-right" inputmode="decimal" placeholder="יתרה התחלתית (אוג׳ 2025)" />
-            <input id="krMonthly" class="input text-right" inputmode="decimal" placeholder="הפקדה חודשית" />
+            <div class="col-span-2 flex items-center gap-2">
+              <input id="krHasMonthly" type="checkbox" class="h-5 w-5" />
+              <label for="krHasMonthly" class="text-sm text-slate-300">יש הפקדה חודשית</label>
+            </div>
+            <input id="krMonthly" class="input text-right col-span-2" inputmode="decimal" placeholder="הפקדה חודשית" disabled />
             <button class="btn btn-prim col-span-2">שמור</button>
           </form>
           <ul id="krList" class="space-y-2"></ul>
@@ -407,6 +411,10 @@
         <button class="btn btn-prim" type="submit">הוסף הערה</button>
       </form>
 
+      <!-- הערות כלליות מעל הלוח -->
+      <h4 class="text-sm text-slate-300 mt-2">הערות כלליות</h4>
+      <ul id="notesGeneral" class="space-y-2 mb-3"></ul>
+
       <!-- לוח שנה -->
       <div id="calendarWrap" class="mb-3">
         <div class="flex items-center justify-between mb-2">
@@ -422,7 +430,9 @@
         <div id="calendarGrid" class="grid grid-cols-7 gap-1"></div>
       </div>
 
-      <ul id="notesList" class="space-y-2"></ul>
+      <!-- הערות ליום הנבחר מתחת ללוח -->
+      <h4 class="text-sm text-slate-300 mt-2">הערות לתאריך נבחר</h4>
+      <ul id="notesDay" class="space-y-2"></ul>
     </div>
   </section>
 
@@ -436,9 +446,9 @@
     const pad = n => String(n).padStart(2,'0');
     const ym = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}`;
     const toInputDate = iso => { const d=new Date(iso); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; };
-    const toNumber = v => { if (v==null) return 0; const s=String(v).replace(/[₪,\s]/g,''); const n=Number(s); return Number.isFinite(n)?n:0; };
+    const toNumber = v => { if (v==null) return 0; const s=String(v).replace(/[₪,\\s]/g,''); const n=Number(s); return Number.isFinite(n)?n:0; };
     const uuid = () => (crypto?.randomUUID?.() || 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0,v=c==='x'?r:(r&0x3|0x8);return v.toString(16);} ));
-    const esc = (s) => String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[m]));
+    const esc = (s) => String(s).replace(/[&<>\"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\\'':'&#39;'}[m]));
 
     function toast(msg){
       const wrap=document.getElementById('toastWrap');
@@ -551,7 +561,6 @@
       return { net, gross, exp, fixed, surplus: net - (exp + fixed) };
     }
 
-    // חישוב חיסכון כולל (ללא פנסיה)
     function savingsOtherTotalFor(state){
       const k = (state.savings?.krans||[]).reduce((s,x)=> s + toNumber(x.balance||0), 0);
       const d = (state.savings?.deposits||[]).reduce((s,x)=> s + toNumber(x.balance||0), 0);
@@ -753,6 +762,7 @@
           <div>
             <div class="font-medium">${esc(r.name)}</div>
             <div class="text-xs text-slate-500">חיוב חודשי פעיל</div>
+            ${r.note ? `<div class="text-xs text-slate-500 mt-0.5">${esc(r.note)}</div>` : ''}
           </div>
           <div class="flex items-center gap-3">
             <div class="text-sm">${ils(r.amount)} לחודש</div>
@@ -773,7 +783,14 @@
         (S().savings.krans||[]).forEach(k=>{
           const li=document.createElement('li');
           li.className='row card p-3 flex items-center justify-between';
-          li.innerHTML=`<div class="font-medium">${esc(k.name)}</div><div class="text-sm">יתרה: ${ils(k.balance)} · חודשי: ${ils(k.monthly||0)}</div>`;
+          li.innerHTML=`
+            <div class="font-medium">${esc(k.name)}</div>
+            <div class="text-sm">יתרה: ${ils(k.balance)} · ${toNumber(k.monthly||0)>0 ? `חודשי: ${ils(k.monthly)}` : 'ללא הפקדה חודשית'}</div>
+            <button class="btn btn-danger text-xs" data-del-kr="${esc(k.id)}" type="button">מחק</button>`;
+          li.querySelector('[data-del-kr]')?.addEventListener('click', ()=>{
+            const i=S().savings.krans.findIndex(x=>x.id===k.id);
+            if(i>-1){ S().savings.krans.splice(i,1); propagateSavingsForward(); saveRoot(); renderSavings(); toast('נמחק'); }
+          });
           krList.appendChild(li);
         });
       }
@@ -784,7 +801,14 @@
           const li=document.createElement('li');
           li.className='row card p-3 flex items-center justify-between';
           const monthly = toNumber(d.monthly||0)>0 ? ` · חודשי: ${ils(d.monthly)}` : '';
-          li.innerHTML=`<div class="font-medium">${esc(d.name)}</div><div class="text-sm">יתרה: ${ils(d.balance)}${monthly}</div>`;
+          li.innerHTML=`
+            <div class="font-medium">${esc(d.name)}</div>
+            <div class="text-sm">יתרה: ${ils(d.balance)}${monthly}</div>
+            <button class="btn btn-danger text-xs" data-del-dep="${esc(d.id)}" type="button">מחק</button>`;
+          li.querySelector('[data-del-dep]')?.addEventListener('click', ()=>{
+            const i=S().savings.deposits.findIndex(x=>x.id===d.id);
+            if(i>-1){ S().savings.deposits.splice(i,1); propagateSavingsForward(); saveRoot(); renderSavings(); toast('נמחק'); }
+          });
           depList.appendChild(li);
         });
       }
@@ -795,7 +819,19 @@
           const pct=Math.min(100, Math.round((toNumber(g.balance||0)/Math.max(1,toNumber(g.target||0)))*100));
           const li=document.createElement('li');
           li.className='card p-3';
-          li.innerHTML=`<div class="flex items-center justify-between mb-1"><div class="font-medium">${esc(g.name)}</div><div class="text-sm">${ils(g.balance||0)} / ${ils(g.target||0)} · ${pct}%</div></div><div class="progress"><div style="width:${pct}%"></div></div>`;
+          li.innerHTML=`
+            <div class="flex items-center justify-between mb-1">
+              <div class="font-medium">${esc(g.name)}</div>
+              <div class="text-sm">${ils(g.balance||0)} / ${ils(g.target||0)} · ${pct}%</div>
+            </div>
+            <div class="progress"><div style="width:${pct}%"></div></div>
+            <div class="mt-2 text-right">
+              <button class="btn btn-danger text-xs" data-del-goal="${esc(g.id)}" type="button">מחק</button>
+            </div>`;
+          li.querySelector('[data-del-goal]')?.addEventListener('click', ()=>{
+            const i=S().savings.goals.findIndex(x=>x.id===g.id);
+            if(i>-1){ S().savings.goals.splice(i,1); propagateSavingsForward(); saveRoot(); renderSavings(); toast('נמחק'); }
+          });
           goalList.appendChild(li);
         });
       }
@@ -861,8 +897,73 @@
 
     /* ==== NOTES + CALENDAR ==== */
     let calendarCursor = new Date(); // מציג חודש ללוח שנה
+    let selectedDay = null;
+
     function startOfMonth(d){ return new Date(d.getFullYear(), d.getMonth(), 1); }
     function endOfMonth(d){ return new Date(d.getFullYear(), d.getMonth()+1, 0); }
+
+    function renderNotesGeneral(){
+      const ul = document.getElementById('notesGeneral'); if(!ul) return;
+      ul.innerHTML='';
+      (ROOT.notes||[]).filter(n=>!n.due).forEach(n=>{
+        const li=document.createElement('li'); li.className='row card p-3 flex items-center justify-between gap-3';
+        li.innerHTML = `
+          <div class="flex-1">
+            <div class="font-medium ${n.done?'line-through text-slate-400':''}">${esc(n.title||'ללא כותרת')}</div>
+            <div class="text-sm text-slate-400 whitespace-pre-line">${esc(n.body||'')}</div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button class="btn btn-ghost text-xs" data-toggle="${n.id}">${n.done?'בטל':'בוצע'}</button>
+            <button class="btn btn-danger text-xs" data-del="${n.id}">מחק</button>
+          </div>`;
+        li.querySelector(`[data-toggle="${n.id}"]`)?.addEventListener('click', ()=>{
+          const it=ROOT.notes.find(x=>x.id===n.id); if(it){it.done=!it.done; saveRoot(); renderNotesGeneral();}
+        });
+        li.querySelector(`[data-del="${n.id}"]`)?.addEventListener('click', ()=>{
+          const i=ROOT.notes.findIndex(x=>x.id===n.id); if(i>-1){ ROOT.notes.splice(i,1); saveRoot(); renderNotesGeneral(); buildCalendar(); renderNotesDay(); }
+        });
+        ul.appendChild(li);
+      });
+    }
+
+    function renderNotesDay(){
+      const ul = document.getElementById('notesDay'); if(!ul) return;
+      ul.innerHTML='';
+      if(!selectedDay){
+        const li=document.createElement('li'); li.className='text-slate-400 text-sm'; li.textContent='בחר/י תאריך בלוח כדי לראות הערות לאותו יום.'; ul.appendChild(li);
+        return;
+      }
+      const y=selectedDay.getFullYear(), m=selectedDay.getMonth(), d=selectedDay.getDate();
+      const arr=(ROOT.notes||[]).filter(n=>{
+        if(!n.due) return false;
+        const nd=new Date(n.due);
+        return nd.getFullYear()===y && nd.getMonth()===m && nd.getDate()===d;
+      }).sort((a,b)=> (a.done?1:0)-(b.done?1:0));
+      if(arr.length===0){
+        const li=document.createElement('li'); li.className='text-slate-400 text-sm'; li.textContent='אין הערות לתאריך זה.'; ul.appendChild(li);
+      } else {
+        arr.forEach(n=>{
+          const li=document.createElement('li'); li.className='row card p-3 flex items-center justify-between gap-3';
+          li.innerHTML = `
+            <div class="flex-1">
+              <div class="font-medium ${n.done?'line-through text-slate-400':''}">${esc(n.title||'ללא כותרת')}</div>
+              <div class="text-sm text-slate-400 whitespace-pre-line">${esc(n.body||'')}</div>
+            </div>
+            <div class="flex items-center gap-2">
+              <button class="btn btn-ghost text-xs" data-toggle="${n.id}">${n.done?'בטל':'בוצע'}</button>
+              <button class="btn btn-danger text-xs" data-del="${n.id}">מחק</button>
+            </div>`;
+          li.querySelector(`[data-toggle="${n.id}"]`)?.addEventListener('click', ()=>{
+            const it=ROOT.notes.find(x=>x.id===n.id); if(it){it.done=!it.done; saveRoot(); renderNotesDay(); }
+          });
+          li.querySelector(`[data-del="${n.id}"]`)?.addEventListener('click', ()=>{
+            const i=ROOT.notes.findIndex(x=>x.id===n.id); if(i>-1){ ROOT.notes.splice(i,1); saveRoot(); renderNotesDay(); buildCalendar(); }
+          });
+          ul.appendChild(li);
+        });
+      }
+    }
+
     function buildCalendar(){
       const grid = document.getElementById('calendarGrid');
       const title = document.getElementById('calTitle');
@@ -871,19 +972,16 @@
       const s = startOfMonth(calendarCursor);
       const e = endOfMonth(calendarCursor);
       title.textContent = s.toLocaleDateString('he-IL',{month:'long', year:'numeric'});
-      const startWeekday = (s.getDay()+6)%7; // הפוך ל־א׳ כעמודה ראשונה
+      const startWeekday = (s.getDay()+6)%7; // א׳ כעמודה ראשונה
       const totalDays = e.getDate();
 
-      // אסוף מועדי הערות
-      const notes = ROOT.notes||[];
       const byDay = {};
-      notes.forEach(n=>{
+      (ROOT.notes||[]).forEach(n=>{
         if(!n.due) return;
         const d = new Date(n.due);
         if(d.getMonth()!==s.getMonth() || d.getFullYear()!==s.getFullYear()) return;
         const day = d.getDate();
-        if(!byDay[day]) byDay[day]=[];
-        byDay[day].push(n);
+        byDay[day] = (byDay[day]||0) + 1;
       });
 
       for(let i=0;i<startWeekday;i++){ const ph=document.createElement('div'); ph.className='h-10'; grid.appendChild(ph); }
@@ -893,57 +991,17 @@
         cell.className='card p-2 h-14 text-left relative';
         cell.innerHTML = `<div class="text-[.75rem] text-slate-300">${day}</div>`;
         if(byDay[day]){
-          const dots=document.createElement('div');
-          dots.className='absolute bottom-1 left-2 flex gap-1';
-          byDay[day].forEach(()=>{ const dot=document.createElement('span'); dot.className='w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block'; dots.appendChild(dot); });
-          cell.appendChild(dots);
+          const badge=document.createElement('span');
+          badge.className='absolute bottom-1 left-2 text-[.7rem] px-1 rounded bg-emerald-700/60';
+          badge.textContent = byDay[day];
+          cell.appendChild(badge);
         }
         cell.addEventListener('click', ()=>{
-          filterNotesByDate(new Date(s.getFullYear(), s.getMonth(), day));
+          selectedDay = new Date(s.getFullYear(), s.getMonth(), day);
+          renderNotesDay();
         });
         grid.appendChild(cell);
       }
-    }
-    function filterNotesByDate(date){
-      const ul = document.getElementById('notesList'); if(!ul) return;
-      ul.querySelectorAll('li').forEach(li=>{
-        const due = li.getAttribute('data-due')||'';
-        if(!due){ li.style.display=''; return; }
-        const d = new Date(due);
-        const match = d.getFullYear()===date.getFullYear() && d.getMonth()===date.getMonth() && d.getDate()===date.getDate();
-        li.style.display = match ? '' : 'none';
-      });
-    }
-    function renderNotes(){
-      const ul = document.getElementById('notesList'); if(!ul) return;
-      ul.innerHTML='';
-      const arr = ROOT.notes.slice().sort((a,b)=>{
-        const ad = a.done?1:0, bd=b.done?1:0; if(ad!==bd) return ad-bd;
-        const adt = a.due? new Date(a.due).getTime(): Infinity;
-        const bdt = b.due? new Date(b.due).getTime(): Infinity;
-        return adt - bdt;
-      });
-      arr.forEach(n=>{
-        const li = document.createElement('li'); li.className='row card p-3 flex items-center justify-between gap-3';
-        if(n.due) li.setAttribute('data-due', n.due);
-        li.innerHTML = `
-          <div class="flex-1">
-            <div class="font-medium ${n.done?'line-through text-slate-400':''}">${esc(n.title||'ללא כותרת')}</div>
-            <div class="text-sm text-slate-400 whitespace-pre-line">${esc(n.body||'')}</div>
-            ${n.due? `<div class="text-xs text-slate-500 mt-1">יעד: ${new Date(n.due).toLocaleDateString('he-IL')}</div>`:''}
-          </div>
-          <div class="flex items-center gap-2">
-            <button class="btn btn-ghost text-xs" data-toggle="${n.id}">${n.done?'בטל':'בוצע'}</button>
-            <button class="btn btn-danger text-xs" data-del="${n.id}">מחק</button>
-          </div>`;
-        li.querySelector(`[data-toggle="${n.id}"]`)?.addEventListener('click', ()=>{
-          const it = ROOT.notes.find(x=>x.id===n.id); if(it){ it.done=!it.done; saveRoot(); renderNotes(); buildCalendar(); }
-        });
-        li.querySelector(`[data-del="${n.id}"]`)?.addEventListener('click', ()=>{
-          const i = ROOT.notes.findIndex(x=>x.id===n.id); if(i>-1){ ROOT.notes.splice(i,1); saveRoot(); renderNotes(); buildCalendar(); }
-        });
-        ul.appendChild(li);
-      });
     }
 
     function renderAll(){
@@ -957,7 +1015,8 @@
       renderSavings();
       updateCatBadge();
       renderPetty();
-      renderNotes();
+      renderNotesGeneral();
+      renderNotesDay();
       buildCalendar();
     }
 
@@ -1036,7 +1095,6 @@
     }
 
     /* ========= EVENTS ========= */
-    // Hide/show main tabs on quick panels
     function toggleMainTabs(show){
       const el = document.getElementById('mainTabs');
       if(!el) return;
@@ -1066,7 +1124,7 @@
     document.getElementById('navPetty')?.addEventListener('click', ()=> showPanel('petty'));
     document.getElementById('navNotes')?.addEventListener('click', ()=> showPanel('notes'));
 
-    // main tabs (inside the main view only)
+    // main tabs
     document.querySelectorAll('.seg [data-view]').forEach(btn=>{
       btn.addEventListener('click', ()=>{
         const seg = btn.closest('.seg');
@@ -1123,7 +1181,7 @@
       e.currentTarget.reset();
     });
 
-    // תקציב חודשי
+    // תקציב חודשי (כפתור)
     document.getElementById('btnBudgetQuickEdit')?.addEventListener('click', ()=>{
       const newVal = prompt('הזן תקציב לחודש הנוכחי', S().totalBudget || 0);
       if(newVal!==null){
@@ -1150,154 +1208,190 @@
       f.reset(); f.classList.add('hidden');
     });
 
-    // הוצאות
-    document.getElementById('formExpense')?.addEventListener('submit', e=>{
-      e.preventDefault();
-      const f=e.currentTarget;
-      if(!f.querySelector('#catSelect').value) { toast('בחר קטגוריה'); f.querySelector('#catSelect').focus(); return; }
-      if(!f.querySelector('#expAmount').value) { toast('מלא/י סכום'); f.querySelector('#expAmount').focus(); return; }
-      addExpense({
-        amount:f.querySelector('#expAmount').value,
-        category:f.querySelector('#catSelect').value,
-        merchant:f.querySelector('#expMerchant').value,
-        date:f.querySelector('#expDate').value
+  // הוצאות
+      document.getElementById('formExpense')?.addEventListener('submit', e=>{
+        e.preventDefault();
+        const f=e.currentTarget;
+        if(!f.querySelector('#catSelect').value) { toast('בחר/י קטגוריה'); f.querySelector('#catSelect').focus(); return; }
+        if(!f.querySelector('#expAmount').value) { toast('מלא/י סכום'); f.querySelector('#expAmount').focus(); return; }
+        addExpense({
+          amount:f.querySelector('#expAmount').value,
+          category:f.querySelector('#catSelect').value,
+          merchant:f.querySelector('#expMerchant').value,
+          date:f.querySelector('#expDate').value
+        });
+        f.reset(); updateCatBadge();
       });
-      f.reset(); updateCatBadge();
-    });
-    ['filterText','filterCat','filterFrom','filterTo','sortBy'].forEach(id=>{
-      const el=document.getElementById(id); if(!el) return;
-      el.addEventListener('input', renderExpensesList);
-      el.addEventListener('change', renderExpensesList);
-    });
-    document.getElementById('catSelect')?.addEventListener('change', updateCatBadge);
 
-    // קבועות (הפצה קדימה)
-    document.getElementById('formFixedAdd')?.addEventListener('submit', e=>{
-      e.preventDefault();
-      const name=document.getElementById('fixName').value;
-      const amount=toNumber(document.getElementById('fixAmount').value);
-      if(!name || !amount){ toast('שם וסכום נדרשים'); return; }
-      const ex=(S().recurring||[]).find(r=>r.name===name);
-      if(ex){ ex.amount=amount; }
-      else { (S().recurring||[]).push({id:uuid(), name, amount}); }
-      propagateRecurringForward(); saveRoot(); renderAll(); toast('חיוב חודשי נשמר'); e.currentTarget.reset();
-    });
-
-    // פנסיה
-    document.getElementById('formPensionAdd')?.addEventListener('submit', e=>{
-      e.preventDefault();
-      const f=e.currentTarget;
-      upsertPension({
-        owner:f.querySelector('#penOwner').value,
-        balance:f.querySelector('#penBalance').value,
-        monthly:f.querySelector('#penMonthly').value
+      // מסנני הוצאות
+      ['filterText','filterCat','filterFrom','filterTo','sortBy'].forEach(id=>{
+        const el=document.getElementById(id); if(!el) return;
+        el.addEventListener('input', renderExpensesList);
+        el.addEventListener('change', renderExpensesList);
       });
-      f.reset();
-    });
+      document.getElementById('catSelect')?.addEventListener('change', updateCatBadge);
 
-    // פיקדון – הפעלת/כיבוי הפקדה חודשית
-    document.getElementById('depHasMonthly')?.addEventListener('change', (e)=>{
-      const on = e.currentTarget.checked;
-      const inp = document.getElementById('depAdd');
-      inp.disabled = !on;
-      if(!on) inp.value='';
-    });
+      // קבועות (כולל "הערה") + הפצה קדימה
+      document.getElementById('formFixedAdd')?.addEventListener('submit', e=>{
+        e.preventDefault();
+        const name=document.getElementById('fixName').value;
+        const amount=toNumber(document.getElementById('fixAmount').value);
+        const note=(document.getElementById('fixNote').value||'').trim();
+        if(!name || !amount){ toast('שם וסכום נדרשים'); return; }
+        const ex=(S().recurring||[]).find(r=>r.name===name);
+        if(ex){ ex.amount=amount; ex.note=note; }
+        else { (S().recurring||[]).push({id:uuid(), name, amount, note}); }
+        propagateRecurringForward(); saveRoot(); renderAll(); toast('חיוב חודשי נשמר'); e.currentTarget.reset();
+      });
 
-    // חיסכון – שמירות + הפצה קדימה
-    document.getElementById('formKeren')?.addEventListener('submit', e=>{
-      e.preventDefault();
-      const n=document.getElementById('krName').value.trim();
-      const b=toNumber(document.getElementById('krBalance').value);
-      const m=toNumber(document.getElementById('krMonthly').value);
-      if(!n){toast('שם קרן נדרש');return;}
-      const ex=(S().savings.krans||[]).find(x=>x.name===n);
-      if(ex){ ex.balance=b; ex.monthly=m; } else { S().savings.krans.push({id:uuid(), name:n, balance:b, monthly:m}); }
-      propagateSavingsForward(); saveRoot(); renderAll(); toast('קרן השתלמות נשמרה'); e.currentTarget.reset();
-    });
-    document.getElementById('formDeposit')?.addEventListener('submit', e=>{
-      e.preventDefault();
-      const n=document.getElementById('depName').value.trim();
-      const b=toNumber(document.getElementById('depBalance').value);
-      const hasM = document.getElementById('depHasMonthly').checked;
-      const m= hasM ? toNumber(document.getElementById('depAdd').value) : 0;
-      if(!n){toast('שם חשבון נדרש');return;}
-      const ex=(S().savings.deposits||[]).find(x=>x.name===n);
-      if(ex){ ex.balance=b; ex.monthly=hasM?m:0; } else { S().savings.deposits.push({id:uuid(), name:n, balance:b, monthly:hasM?m:0}); }
-      propagateSavingsForward(); saveRoot(); renderAll(); toast('פיקדון נשמר'); e.currentTarget.reset();
-      document.getElementById('depHasMonthly').checked=false; document.getElementById('depAdd').disabled=true; document.getElementById('depAdd').value='';
-    });
-    document.getElementById('formGoal')?.addEventListener('submit', e=>{
-      e.preventDefault();
-      const n=document.getElementById('goalName').value.trim();
-      const t=toNumber(document.getElementById('goalTarget').value);
-      const m=toNumber(document.getElementById('goalMonthly').value);
-      if(!n||!t){toast('שם ויעד נדרשים');return;}
-      const ex=(S().savings.goals||[]).find(x=>x.name===n);
-      if(ex){ ex.target=t; ex.monthly=m; ex.balance=ex.balance||0; }
-      else { S().savings.goals.push({id:uuid(), name:n, target:t, monthly:m, balance:0}); }
-      propagateSavingsForward(); saveRoot(); renderAll(); toast('תכנית חיסכון נשמרה'); e.currentTarget.reset();
-    });
+      // פנסיה – כבר קיים: formPensionAdd / upsertPension
 
-    // מודל עריכה
-    document.getElementById('editClose')?.addEventListener('click', ()=> toggleModal(false));
-    document.getElementById('editCancel')?.addEventListener('click', ()=> toggleModal(false));
-    document.getElementById('formEdit')?.addEventListener('submit', e=>{ e.preventDefault(); saveEdit(e.currentTarget); });
-    document.getElementById('editDelete')?.addEventListener('click', ()=> deleteRow(document.getElementById('editId').value));
-    document.getElementById('editType')?.addEventListener('change', toggleEditCategoryVisibility);
+      // קרן השתלמות – הפעלת/כיבוי "הפקדה חודשית"
+      document.getElementById('krHasMonthly')?.addEventListener('change', (e)=>{
+        const on = e.currentTarget.checked;
+        const inp = document.getElementById('krMonthly');
+        inp.disabled = !on;
+        if(!on) inp.value='';
+      });
+      // קרן השתלמות – שמירה + הפצה קדימה
+      document.getElementById('formKeren')?.addEventListener('submit', e=>{
+        e.preventDefault();
+        const n=(document.getElementById('krName').value||'').trim();
+        const b=toNumber(document.getElementById('krBalance').value);
+        const hasM = document.getElementById('krHasMonthly').checked;
+        const m= hasM ? toNumber(document.getElementById('krMonthly').value) : 0;
+        if(!n){ toast('שם קרן נדרש'); return; }
+        const ex=(S().savings.krans||[]).find(x=>x.name===n);
+        if(ex){ ex.balance=b; ex.monthly=hasM?m:0; } else { S().savings.krans.push({id:uuid(), name:n, balance:b, monthly:hasM?m:0}); }
+        propagateSavingsForward(); saveRoot(); renderAll(); toast('קרן השתלמות נשמרה');
+        e.currentTarget.reset();
+        document.getElementById('krHasMonthly').checked=false;
+        document.getElementById('krMonthly').disabled=true;
+      });
 
-    // חודש
-    document.getElementById('btnMonthPicker')?.addEventListener('click', openMonthPicker);
-    document.getElementById('mpClose')?.addEventListener('click', ()=> toggleMP(false));
-    function openMonthPicker(){
-      const grid = document.getElementById('mpGrid');
-      grid.innerHTML='';
-      const start = new Date(2025,7,1);
-      const end = new Date(new Date().getFullYear(), new Date().getMonth()+11, 1);
-      for(let d=new Date(start); d<=end; d.setMonth(d.getMonth()+1)){
-        const key=ym(d);
-        const b=document.createElement('button');
-        b.type='button';
-        b.className='btn btn-ghost text-xs py-2';
-        b.textContent=d.toLocaleDateString('he-IL',{month:'long',year:'2-digit'});
-        b.addEventListener('click',()=>{ ROOT.current=key; ensureMonth(key); saveRoot(); syncTodayInputs(); renderAll(); toggleMP(false); });
-        grid.appendChild(b);
+      // פיקדונות – הפעלת/כיבוי "הפקדה חודשית"
+      document.getElementById('depHasMonthly')?.addEventListener('change', (e)=>{
+        const on = e.currentTarget.checked;
+        const inp = document.getElementById('depAdd');
+        inp.disabled = !on;
+        if(!on) inp.value='';
+      });
+      // פיקדונות – שמירה + הפצה קדימה
+      document.getElementById('formDeposit')?.addEventListener('submit', e=>{
+        e.preventDefault();
+        const n=(document.getElementById('depName').value||'').trim();
+        const b=toNumber(document.getElementById('depBalance').value);
+        const hasM = document.getElementById('depHasMonthly').checked;
+        const m= hasM ? toNumber(document.getElementById('depAdd').value) : 0;
+        if(!n){ toast('שם חשבון נדרש'); return; }
+        const ex=(S().savings.deposits||[]).find(x=>x.name===n);
+        if(ex){ ex.balance=b; ex.monthly=hasM?m:0; } else { S().savings.deposits.push({id:uuid(), name:n, balance:b, monthly:hasM?m:0}); }
+        propagateSavingsForward(); saveRoot(); renderAll(); toast('פיקדון נשמר');
+        e.currentTarget.reset();
+        document.getElementById('depHasMonthly').checked=false;
+        document.getElementById('depAdd').disabled=true;
+      });
+
+      // תכנית חיסכון – שמירה + הפצה קדימה
+      document.getElementById('formGoal')?.addEventListener('submit', e=>{
+        e.preventDefault();
+        const n=(document.getElementById('goalName').value||'').trim();
+        const t=toNumber(document.getElementById('goalTarget').value);
+        const m=toNumber(document.getElementById('goalMonthly').value);
+        if(!n||!t){ toast('שם ויעד נדרשים'); return; }
+        const ex=(S().savings.goals||[]).find(x=>x.name===n);
+        if(ex){ ex.target=t; ex.monthly=m; ex.balance=ex.balance||0; }
+        else { S().savings.goals.push({id:uuid(), name:n, target:t, monthly:m, balance:0}); }
+        propagateSavingsForward(); saveRoot(); renderAll(); toast('תכנית חיסכון נשמרה'); e.currentTarget.reset();
+      });
+
+      // מודל עריכה
+      document.getElementById('editClose')?.addEventListener('click', ()=> toggleModal(false));
+      document.getElementById('editCancel')?.addEventListener('click', ()=> toggleModal(false));
+      document.getElementById('formEdit')?.addEventListener('submit', e=>{ e.preventDefault(); saveEdit(e.currentTarget); });
+      document.getElementById('editDelete')?.addEventListener('click', ()=> deleteRow(document.getElementById('editId').value));
+      document.getElementById('editType')?.addEventListener('change', toggleEditCategoryVisibility);
+
+      // חודש – בורר חודשים (Modal)
+      document.getElementById('btnMonthPicker')?.addEventListener('click', openMonthPicker);
+      document.getElementById('mpClose')?.addEventListener('click', ()=> toggleMP(false));
+      function openMonthPicker(){
+        const grid = document.getElementById('mpGrid');
+        grid.innerHTML='';
+        const start = new Date(2025,7,1); // אוג׳ 2025
+        const end = new Date(new Date().getFullYear(), new Date().getMonth()+11, 1);
+        for(let d=new Date(start); d<=end; d.setMonth(d.getMonth()+1)){
+          const key=ym(d);
+          const b=document.createElement('button');
+          b.type='button';
+          b.className='btn btn-ghost text-xs py-2';
+          b.textContent=d.toLocaleDateString('he-IL',{month:'long',year:'2-digit'});
+          b.addEventListener('click',()=>{ ROOT.current=key; ensureMonth(key); saveRoot(); syncTodayInputs(); renderAll(); toggleMP(false); });
+          grid.appendChild(b);
+        }
+        toggleMP(true);
       }
-      toggleMP(true);
-    }
-    function toggleMP(show){
-      const m=document.getElementById('monthPicker');
-      if(show){m.classList.remove('hidden'); m.classList.add('flex');}
-      else {m.classList.add('hidden'); m.classList.remove('flex');}
-    }
+      function toggleMP(show){
+        const m=document.getElementById('monthPicker');
+        if(show){m.classList.remove('hidden'); m.classList.add('flex');}
+        else {m.classList.add('hidden'); m.classList.remove('flex');}
+      }
 
-    // הערות – אירועים
-    document.getElementById('formNote')?.addEventListener('submit', e=>{
-      e.preventDefault();
-      const title = document.getElementById('noteTitle').value.trim();
-      const body  = document.getElementById('noteBody').value.trim();
-      const due   = document.getElementById('noteDue').value ? new Date(document.getElementById('noteDue').value).toISOString() : '';
-      ROOT.notes.unshift({id:uuid(), title, body, due, done:false});
-      saveRoot(); renderNotes(); buildCalendar(); e.currentTarget.reset(); toast('הערה נשמרה');
-    });
-    document.getElementById('calPrev')?.addEventListener('click', ()=>{ calendarCursor.setMonth(calendarCursor.getMonth()-1); buildCalendar(); });
-    document.getElementById('calNext')?.addEventListener('click', ()=>{ calendarCursor.setMonth(calendarCursor.getMonth()+1); buildCalendar(); });
-
-    function syncTodayInputs(){
-      const d = new Date(ROOT.current+'-01');
-      const dateStr = `${d.getFullYear()}-${pad(d.getMonth()+1)}-01`;
-      ['incomeDate','expDate'].forEach(id=>{
-        const el=document.getElementById(id); if(el) el.value=dateStr;
+      // קופה קטנה – תקציב ומהרשמה
+      document.getElementById('pettyBudgetBtn')?.addEventListener('click', ()=>{
+        const cur = toNumber(ROOT.petty?.budgetCap||0);
+        const v = prompt('הזן/י תקציב קופה קטנה', cur || 0);
+        if(v!==null){
+          ROOT.petty.budgetCap = toNumber(v);
+          saveRoot(); renderPetty(); toast('תקציב קופה עודכן');
+        }
       });
-    }
+      document.getElementById('formPettyExpense')?.addEventListener('submit', e=>{
+        e.preventDefault();
+        const a = toNumber(document.getElementById('pettyAmount').value);
+        const c = (document.getElementById('pettyCat').value||'').trim();
+        const m = (document.getElementById('pettyMerchant').value||'').trim();
+        const d = document.getElementById('pettyDate').value;
+        if(!c){ toast('בחר/י קטגוריה'); return; }
+        if(!a){ toast('סכום נדרש'); return; }
+        ROOT.petty.transactions.unshift({ id:uuid(), amount:a, category:c, merchant:m, date: (d? new Date(d): new Date()).toISOString() });
+        saveRoot(); renderPetty(); toast('הוספה לקופה');
+        e.currentTarget.reset();
+      });
 
-    function initUI(){
-      initCategorySelects();
-      syncTodayInputs();
-      renderAll();
-      showPanel('home'); // QuickBar default
-    }
+      // הערות – יצירה
+      document.getElementById('formNote')?.addEventListener('submit', e=>{
+        e.preventDefault();
+        const title = (document.getElementById('noteTitle').value||'').trim();
+        const body  = (document.getElementById('noteBody').value||'').trim();
+        const dueStr= document.getElementById('noteDue').value;
+        const due   = dueStr ? new Date(dueStr).toISOString() : '';
+        ROOT.notes.unshift({id:uuid(), title, body, due, done:false});
+        saveRoot(); renderNotesGeneral(); renderNotesDay(); buildCalendar(); e.currentTarget.reset(); toast('הערה נשמרה');
+      });
 
-    initUI();
-  </script>
+      // לוח שנה – ניווט
+      document.getElementById('calPrev')?.addEventListener('click', ()=>{ calendarCursor.setMonth(calendarCursor.getMonth()-1); buildCalendar(); });
+      document.getElementById('calNext')?.addEventListener('click', ()=>{ calendarCursor.setMonth(calendarCursor.getMonth()+1); buildCalendar(); });
+
+      // עזרי תאריך לשדות המהירים
+      function syncTodayInputs(){
+        const d = new Date(ROOT.current+'-01');
+        const dateStr = `${d.getFullYear()}-${pad(d.getMonth()+1)}-01`;
+        ['incomeDate','expDate','pettyDate'].forEach(id=>{
+          const el=document.getElementById(id); if(el) el.value=dateStr;
+        });
+      }
+
+      // INIT
+      function initUI(){
+        initCategorySelects();
+        syncTodayInputs();
+        renderAll();
+        showPanel('home'); // QuickBar default
+      }
+
+      initUI();
+    </script>
 </body>
 </html>
