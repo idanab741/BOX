@@ -866,6 +866,7 @@
       }
     }
 
+    // ***** פה השינוי שביקשת *****
     function renderHeaderAndGauge(){
       setCurrentMonthLabel();
       const t = totals();
@@ -879,19 +880,26 @@
       document.getElementById('kpiSavingsTotal').textContent = ils(savingsOther);
       document.getElementById('kpiPensionTotal').textContent = ils(pensionTotal);
 
+      // נשמר לצורך המד: הוצאות אמיתיות (משתנות + קבועות)
       const fixedThisMonth = (S().recurring||[]).reduce((s,r)=> s + toNumber(r.amount||0), 0);
       const spent = t.exp + fixedThisMonth;
-      const surplus = t.net - spent;
+
+      // *** חדש: עודף = הכנסות נטו - תקציב חודשי ***
+      const surplus = t.net - (S().totalBudget || 0);
       document.getElementById('kpiSurplus').textContent = ils(surplus);
+
+      // שאר ה־KPI כרגיל
       document.getElementById('kpiCurExp').textContent  = ils(t.exp);
       document.getElementById('kpiOverdraft').textContent = ils(S().overdraft||0);
 
+      // המד נשאר לפי תקציב מול הוצאות
       const left  = (S().totalBudget||0) - spent;
       const pct   = S().totalBudget>0 ? spent/S().totalBudget : 0;
       setGauge(pct, spent, left);
 
       const ovHome = document.getElementById('ovHomeVal'); if(ovHome) ovHome.textContent = ils(S().overdraft||0);
     }
+    // ***** סוף שינוי *****
 
     function renderPetty(){
       initCategorySelects();
