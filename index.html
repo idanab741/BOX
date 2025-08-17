@@ -88,10 +88,7 @@
       <button class="on" role="tab" aria-selected="true" aria-controls="view-home" data-view="home" type="button">ניהול מעקב</button>
       <button role="tab" aria-selected="false" aria-controls="view-expenses" data-view="expenses" type="button">הוצאות</button>
       <button role="tab" aria-selected="false" aria-controls="view-savings" data-view="savings" type="button">חיסכון</button>
-    $1  <!-- Fixed build/version footer moved just above the Quick Bar -->
-  <div id="buildFooter" class="fixed inset-x-0 text-center text-[.7rem] text-slate-500 z-20 pointer-events-none" style="bottom:calc(56px + env(safe-area-inset-bottom) + 6px);">
-    v10 • מובייל (iPhone 14) • כל חודש נשמר בנפרד • RTL • Dark
-  </div>
+    </nav>
 
     <!-- VIEW: HOME -->
     <section id="view-home" class="space-y-4" data-view-panel="home">
@@ -304,6 +301,10 @@
         </div>
       </div>
     </section>
+
+    <footer class="text-center text-[.7rem] text-slate-500 py-6" role="contentinfo">
+      v10 • מובייל (iPhone 14) • כל חודש נשמר בנפרד • RTL • Dark
+    </footer>
   </main>
 
   <!-- Sticky Quick Bar -->
