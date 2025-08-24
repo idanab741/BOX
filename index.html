@@ -84,9 +84,10 @@
     <p class="text-sm text-slate-400 mb-3">הכנס/י מייל. נשלח קישור כניסה מאובטח (Magic Link).</p>
     <form id="formLogin" class="grid grid-cols-1 gap-3 mb-2">
       <input id="loginEmail" class="input" type="email" placeholder="your@email.com" required />
-      <button class="btn btn-prim" type="submit">שלח קישור כניסה</button>
+      <button id="loginBtn" class="btn btn-prim" type="submit">שלח קישור כניסה</button>
     </form>
     <p id="loginMsg" class="text-sm text-emerald-300 hidden"></p>
+    <p id="offlineMsg" class="text-sm text-orange-300 hidden mt-2"></p>
   </section>
 
   <!-- SETUP HOUSEHOLD -->
@@ -118,9 +119,9 @@
 
   <!-- MAIN TABS -->
   <nav id="mainTabs" class="seg card p-1 hidden" role="tablist" aria-label="ניווט">
-    <button class="on" role="tab" aria-selected="true" aria-controls="view-home" data-view="home" type="button">ניהול מעקב</button>
-    <button role="tab" aria-selected="false" aria-controls="view-expenses" data-view="expenses" type="button">הוצאות</button>
-    <button role="tab" aria-selected="false" aria-controls="view-savings" data-view="savings" type="button">חיסכון</button>
+    <button id="tabHome" class="on" role="tab" aria-selected="true" aria-controls="view-home" data-view="home" type="button">ניהול מעקב</button>
+    <button id="tabExpenses" role="tab" aria-selected="false" aria-controls="view-expenses" data-view="expenses" type="button">הוצאות</button>
+    <button id="tabSavings" role="tab" aria-selected="false" aria-controls="view-savings" data-view="savings" type="button">חיסכון</button>
   </nav>
 
   <!-- VIEW: HOME -->
@@ -199,8 +200,8 @@
   <!-- VIEW: EXPENSES -->
   <section id="view-expenses" class="space-y-4 hidden" data-view-panel="expenses">
     <div class="seg card p-1" role="tablist" aria-label="סוג הוצאות">
-      <button class="on" data-subview="exp-var" aria-selected="true" type="button">משתנות</button>
-      <button data-subview="exp-fixed" aria-selected="false" type="button">קבועות</button>
+      <button id="subVar" class="on" data-subview="exp-var" aria-selected="true" type="button">משתנות</button>
+      <button id="subFixed" data-subview="exp-fixed" aria-selected="false" type="button">קבועות</button>
     </div>
 
     <!-- Variable -->
@@ -247,7 +248,7 @@
             <option>שכירות</option><option>ארנונה</option><option>ועד בית</option>
             <option>חנייה</option><option>אינטרנט</option><option>חשמל</option>
             <option>מים</option><option>סלולרי</option><option>ביטוחים</option>
-            <option>‌رכב – ביטוח/טסט/דלק</option><option>חנייה</option><option>מנויים</option>
+            <option>‌רכב – ביטוח/טסט/דלק</option><option>חנייה</option><option>מנויים</option>
             <option>חינוך/גן</option><option>אחר</option>
           </select>
           <input id="fixAmount" class="input text-right" placeholder="סכום" inputmode="decimal" />
@@ -262,10 +263,10 @@
   <!-- VIEW: SAVINGS -->
   <section id="view-savings" class="space-y-4 hidden" data-view-panel="savings">
     <div class="seg card p-1" role="tablist" aria-label="חיסכון – סוגים">
-      <button class="on" data-subview="sav-pension" aria-selected="true" type="button">פנסיה</button>
-      <button data-subview="sav-kran" aria-selected="false" type="button">קרן השתלמות</button>
-      <button data-subview="sav-deposit" aria-selected="false" type="button">פיקדון כללי</button>
-      <button data-subview="sav-goal" aria-selected="false" type="button">תוכנית חיסכון</button>
+      <button id="subPen" class="on" data-subview="sav-pension" aria-selected="true" type="button">פנסיה</button>
+      <button id="subKran" data-subview="sav-kran" aria-selected="false" type="button">קרן השתלמות</button>
+      <button id="subDep" data-subview="sav-deposit" aria-selected="false" type="button">פיקדון כללי</button>
+      <button id="subGoal" data-subview="sav-goal" aria-selected="false" type="button">תוכנית חיסכון</button>
     </div>
 
     <div id="sav-pension" data-subpanel="sav-pension" class="space-y-3">
@@ -441,7 +442,7 @@ const PRODUCT_CONFIG = {
   fixedCats: ["שכירות","ארנונה","ועד בית","אינטרנט","חשמל","מים","סלולרי","ביטוחים","רכב – ביטוח/טסט/דלק","חנייה","מנויים","חינוך/גן","אחר"]
 };
 
-/* ========= INIT ========= */
+/* ========= INIT / UTILS ========= */
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 const ILS = new Intl.NumberFormat('he-IL',{ style:'currency', currency:'ILS', minimumFractionDigits:0, maximumFractionDigits:0 });
 const ils = n => ILS.format(Math.round(Number(n||0)));
@@ -451,8 +452,8 @@ const toInputDate = iso => { const d=new Date(iso); return `${d.getFullYear()}-$
 const toNumber = v => { if (v==null) return 0; const s=String(v).replace(/[₪,\s]/g,''); const n=Number(s); return Number.isFinite(n)?n:0; };
 const uuid = () => (crypto?.randomUUID?.() || 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0,v=c==='x'?r:(r&0x3|0x8);return v.toString(16);} ));
 const esc = (s) => String(s).replace(/[&<>\"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[m]));
+document.documentElement.style.webkitTapHighlightColor = 'transparent';
 
-/* ========= TOAST ========= */
 function toast(msg){
   const wrap=document.getElementById('toastWrap');
   const t=document.createElement('div');
@@ -462,53 +463,142 @@ function toast(msg){
   setTimeout(()=>{t.remove();},3000);
 }
 
+/* ========= TOUCH HELPERS ========= */
+function bindTap(el, handler){
+  if (!el) return;
+  const fn = (ev)=>{ ev.preventDefault(); handler(ev); };
+  el.addEventListener('click', fn, { passive:false });
+  el.addEventListener('touchend', fn, { passive:false });
+  el.addEventListener('pointerup', fn, { passive:false });
+}
+
+/* ========= OFFLINE STORAGE (FALLBACK) ========= */
+let OFFLINE = false;           // נקבע אוטומטית
+const LKEY = 'wallet.v11';
+const localDB = JSON.parse(localStorage.getItem(LKEY)||'{}');
+function lget(table){ return localDB[table] || []; }
+function lset(table, rows){ localDB[table]=rows; localStorage.setItem(LKEY, JSON.stringify(localDB)); }
+function lfind(table, pred){ return lget(table).find(pred); }
+function ladd(table, row){ const rows=lget(table); rows.push(row); lset(table, rows); return row; }
+function lupdate(table, id, patch){
+  const rows=lget(table); const i=rows.findIndex(r=>r.id===id);
+  if (i>-1){ rows[i]=Object.assign({}, rows[i], patch); lset(table, rows); }
+}
+function lremove(table, id){ const rows=lget(table).filter(r=>r.id!==id); lset(table, rows); }
+function enableOffline(reason){
+  if (OFFLINE) return;
+  OFFLINE = true;
+  const off=document.getElementById('offlineMsg');
+  if(off){ off.textContent = 'מצב לא מקוון: הנתונים נשמרים מקומית במכשיר. ('+(reason||'')+')'; off.classList.remove('hidden'); }
+}
+
 /* ========= AUTH ========= */
 let SESSION = null, USER = null, HOUSEHOLD = null;
+let CURRENT_MONTH = PRODUCT_CONFIG.defaultMonth;
+
+function lastDayOfMonthKey(ymKey){
+  const [y,m] = ymKey.split('-').map(Number);
+  const last = new Date(y, m, 0).getDate();
+  return `${ymKey}-${pad(last)}`;
+}
+
 async function initAuth(){
-  const { data:{ session } } = await sb.auth.getSession();
-  SESSION = session || null;
-  USER = session?.user || null;
+  try{
+    const { data:{ session }, error } = await sb.auth.getSession();
+    if (error) throw error;
+    SESSION = session || null;
+    USER = session?.user || null;
+  }catch(e){
+    enableOffline('Auth Unavailable');
+  }
 
   sb.auth.onAuthStateChange(async (_event, sess)=>{
     SESSION = sess || null;
     USER = sess?.user || null;
-    if (USER){
-      await afterLogin();
-    } else {
-      showOnly('auth');
-    }
+    if (USER){ await afterLogin(); } else { showOnly('auth'); }
   });
 
-  if (USER){ await afterLogin(); } else { showOnly('auth'); }
+  if (USER){ await afterLogin(); }
+  else {
+    showOnly('auth');
+    // אם אין רשת/DB – הצג אופציה לעבוד מקומית בלי לגעת בכלום
+    if (!navigator.onLine) enableOffline('No Internet');
+  }
 }
 
 document.getElementById('formLogin')?.addEventListener('submit', async (e)=>{
   e.preventDefault();
   const email = document.getElementById('loginEmail').value.trim();
   if(!email) return;
-  const { error } = await sb.auth.signInWithOtp({ email, options:{ emailRedirectTo: window.location.origin } });
-  if(error){ toast('שגיאה בשליחת קישור'); console.warn(error); return; }
-  const m=document.getElementById('loginMsg');
-  m.textContent='שלחנו קישור כניסה למייל. התחבר/י עם אותו מייל שבו שמרת את הנתונים.';
-  m.classList.remove('hidden');
+
+  if (OFFLINE || location.protocol==='file:'){
+    enableOffline(location.protocol==='file:' ? 'file:// mode' : 'Manual offline');
+    toast('מתחבר במצב לא מקוון (שמירה מקומית)');
+    // עבור ישר ל-Setup (לשימוש מקומי)
+    showOnly('setup');
+    return;
+  }
+
+  try{
+    const { error } = await sb.auth.signInWithOtp({
+      email,
+      options:{ emailRedirectTo: location.origin, shouldCreateUser: true }
+    });
+    if(error) throw error;
+    const m=document.getElementById('loginMsg');
+    m.textContent='שלחנו קישור למייל. פתח/י אותו באותו המכשיר והדפדפן.';
+    m.classList.remove('hidden');
+  }catch(err){
+    console.warn(err);
+    enableOffline('OTP Failed');
+    toast('מעבר למצב לא מקוון (שמירה מקומית)');
+    showOnly('setup');
+  }
 });
 
 document.getElementById('btnSignOut')?.addEventListener('click', async ()=>{
-  await sb.auth.signOut();
-  HOUSEHOLD=null;
+  if (!OFFLINE){
+    try{ await sb.auth.signOut(); }catch(e){ console.warn(e); }
+  }
+  HOUSEHOLD=null; USER=null; SESSION=null;
   showOnly('auth');
 });
 
-/* ========= HOUSEHOLD ========= */
-async function loadHousehold(){
-  const { data:mems, error } = await sb
-    .from('household_members')
-    .select('household_id, role, households(id,name)')
-    .eq('user_id', USER.id);
+/* ========= DB HELPERS ========= */
+const CAT = { VARIABLE: PRODUCT_CONFIG.variableCats, FIXED: PRODUCT_CONFIG.fixedCats };
 
-  if(error){ console.warn(error); return null; }
-  if(mems && mems.length){
-    HOUSEHOLD = { id: mems[0].household_id, name: mems[0].households?.name || 'משק בית' };
+async function safeQuery(fn, fallback){
+  if (OFFLINE) return fallback();
+  try{
+    const res = await fn();
+    if (res?.error) throw res.error;
+    return res?.data ?? fallback();
+  }catch(e){
+    console.warn('[DB fallback]', e?.message||e);
+    enableOffline(e?.message||'DB Error');
+    return fallback();
+  }
+}
+
+/* === HOUSEHOLD / MEMBERS === */
+async function loadHousehold(){
+  if (OFFLINE || !USER){
+    // OFFLINE: בחר בית קיים או ריק
+    const mems = lget('household_members').filter(m=>m.user_id==='offline-user');
+    if (mems.length){
+      const h = lfind('households', hh=>hh.id===mems[0].household_id) || {id:'local-hh', name:'משק בית'};
+      HOUSEHOLD = { id: h.id, name: h.name||'משק בית' };
+      return HOUSEHOLD;
+    }
+    return null;
+  }
+
+  const data = await safeQuery(
+    ()=> sb.from('household_members').select('household_id, role, households(id,name)').eq('user_id', USER.id),
+    ()=> lget('household_members').filter(m=>m.user_id==='offline-user').map(m=>({ household_id:m.household_id, households:{ id:m.household_id, name:'משק בית' } }))
+  );
+  if (data && data.length){
+    HOUSEHOLD = { id: data[0].household_id, name: data[0].households?.name || 'משק בית' };
     return HOUSEHOLD;
   }
   return null;
@@ -520,137 +610,166 @@ document.getElementById('formSetup')?.addEventListener('submit', async (e)=>{
   const budget = toNumber(document.getElementById('setupBudget').value);
   const overdraft = toNumber(document.getElementById('setupOverdraft').value);
 
-  const { data:hh, error:hErr } = await sb.from('households').insert({ name }).select('id').single();
-  if(hErr){ toast('שגיאה ביצירת משק בית'); console.warn(hErr); return; }
+  if (OFFLINE){
+    const hid = 'hh-'+uuid();
+    ladd('households', { id: hid, name });
+    ladd('household_members', { household_id: hid, user_id: 'offline-user', role:'owner' });
+    const month_key = PRODUCT_CONFIG.defaultMonth;
+    ladd('months', { household_id: hid, year_month: month_key, total_budget: budget, overdraft });
+    HOUSEHOLD = { id: hid, name };
+    await detectInitialMonth();
+    await renderAll();
+    showOnly('app');
+    toast('משק בית (מקומי) הוקם');
+    return;
+  }
 
-  await sb.from('household_members').insert({ household_id:hh.id, user_id: USER.id, role:'owner' });
-
+  const hh = await safeQuery(
+    ()=> sb.from('households').insert({ name }).select('id').single(),
+    ()=> ({ id: 'hh-'+uuid() })
+  );
+  const hid = hh?.id || ('hh-'+uuid());
+  await safeQuery(()=> sb.from('household_members').insert({ household_id:hid, user_id: USER.id, role:'owner' }), ()=> ladd('household_members',{ household_id:hid, user_id:'offline-user', role:'owner' }) );
   const month_key = PRODUCT_CONFIG.defaultMonth;
-  await sb.from('months').insert({ household_id: hh.id, year_month: month_key, total_budget: budget, overdraft });
-  HOUSEHOLD = { id: hh.id, name };
-  await detectInitialMonth(); // יבחר את החודש שהרגע נוצר
+  await safeQuery(()=> sb.from('months').insert({ household_id: hid, year_month: month_key, total_budget: budget, overdraft }), ()=> ladd('months',{ household_id:hid, year_month:month_key, total_budget:budget, overdraft }) );
+  HOUSEHOLD = { id: hid, name };
+  await detectInitialMonth();
   await renderAll();
   showOnly('app');
   toast('משק בית הוקם');
 });
 
-/* ========= MONTH CHOICE (RESTORE EXISTING DATA) ========= */
-let CURRENT_MONTH = PRODUCT_CONFIG.defaultMonth;
-
+/* ========= MONTH CHOICE / INIT ========= */
 async function detectInitialMonth(){
-  // לוקח את החודש האחרון שבו קיימים טרנזקציות או הגדרת חודש
   let key = PRODUCT_CONFIG.defaultMonth;
 
-  const { data: txLatest } = await sb
-    .from('transactions')
-    .select('date')
-    .eq('household_id', HOUSEHOLD.id)
-    .order('date', { ascending:false })
-    .limit(1);
-
-  if (txLatest && txLatest.length){
-    const d = new Date(txLatest[0].date);
-    key = `${d.getFullYear()}-${pad(d.getMonth()+1)}`;
+  if (OFFLINE){
+    const tx = lget('transactions').filter(t=>t.household_id===HOUSEHOLD.id).sort((a,b)=> new Date(b.date)-new Date(a.date));
+    if (tx.length){ const d=new Date(tx[0].date); key = `${d.getFullYear()}-${pad(d.getMonth()+1)}`; }
+    else{
+      const months = lget('months').filter(m=>m.household_id===HOUSEHOLD.id).sort((a,b)=> b.year_month.localeCompare(a.year_month));
+      if (months.length) key = months[0].year_month;
+    }
   } else {
-    const { data: monthsLatest } = await sb
-      .from('months')
-      .select('year_month')
-      .eq('household_id', HOUSEHOLD.id)
-      .order('year_month', { ascending:false })
-      .limit(1);
-    if(monthsLatest && monthsLatest.length) key = monthsLatest[0].year_month;
+    const txLatest = await safeQuery(
+      ()=> sb.from('transactions').select('date').eq('household_id', HOUSEHOLD.id).order('date', { ascending:false }).limit(1),
+      ()=> []
+    );
+    if (txLatest && txLatest.length){
+      const d = new Date(txLatest[0].date);
+      key = `${d.getFullYear()}-${pad(d.getMonth()+1)}`;
+    } else {
+      const monthsLatest = await safeQuery(
+        ()=> sb.from('months').select('year_month').eq('household_id', HOUSEHOLD.id).order('year_month', { ascending:false }).limit(1),
+        ()=> []
+      );
+      if(monthsLatest && monthsLatest.length) key = monthsLatest[0].year_month;
+    }
   }
 
   CURRENT_MONTH = key;
 
-  // דואג שקיים רשומת חודש – בלי למחוק/לאפס נתונים קיימים
-  const { data: exists } = await sb
-    .from('months')
-    .select('year_month')
-    .eq('household_id', HOUSEHOLD.id)
-    .eq('year_month', key)
-    .maybeSingle();
+  // ודא שקיימת שורת חודש
+  if (OFFLINE){
+    const exists = lfind('months', m=>m.household_id===HOUSEHOLD.id && m.year_month===key);
+    if(!exists){
+      const last = lget('months').filter(m=>m.household_id===HOUSEHOLD.id).sort((a,b)=> b.year_month.localeCompare(a.year_month));
+      const prevOverdraft = last.length ? toNumber(last[0].overdraft||0) : 0;
+      ladd('months', { household_id: HOUSEHOLD.id, year_month: key, total_budget: 0, overdraft: prevOverdraft });
+    }
+    return;
+  }
 
+  const exists = await safeQuery(
+    ()=> sb.from('months').select('year_month').eq('household_id', HOUSEHOLD.id).eq('year_month', key).maybeSingle(),
+    ()=> lfind('months', m=>m.household_id===HOUSEHOLD.id && m.year_month===key) || null
+  );
   if(!exists){
-    // מנסה "לסחוב" עו"ש מהחודש האחרון שקיים
     let prevOverdraft = 0;
-    const { data: lastMonth } = await sb
-      .from('months')
-      .select('overdraft, year_month')
-      .eq('household_id', HOUSEHOLD.id)
-      .order('year_month', { ascending:false })
-      .limit(1);
-    if(lastMonth && lastMonth.length) prevOverdraft = toNumber(lastMonth[0].overdraft || 0);
-
-    await sb.from('months').insert({
-      household_id: HOUSEHOLD.id,
-      year_month: key,
-      total_budget: 0,
-      overdraft: prevOverdraft
-    });
+    const lastMonth = await safeQuery(
+      ()=> sb.from('months').select('overdraft, year_month').eq('household_id', HOUSEHOLD.id).order('year_month', { ascending:false }).limit(1),
+      ()=> lget('months').filter(m=>m.household_id===HOUSEHOLD.id).sort((a,b)=> b.year_month.localeCompare(a.year_month))
+    );
+    if(Array.isArray(lastMonth) && lastMonth.length) prevOverdraft = toNumber(lastMonth[0].overdraft||0);
+    await safeQuery(
+      ()=> sb.from('months').insert({ household_id: HOUSEHOLD.id, year_month: key, total_budget: 0, overdraft: prevOverdraft }),
+      ()=> ladd('months', { household_id: HOUSEHOLD.id, year_month: key, total_budget: 0, overdraft: prevOverdraft })
+    );
   }
 }
 
 async function afterLogin(){
   const hh = await loadHousehold();
   if(!hh){ showOnly('setup'); return; }
-  await detectInitialMonth();   // ← זה מה שמחזיר את הדאטה הקיים במקום לאפס לחודש חדש
+  await detectInitialMonth();
   await renderAll();
   showOnly('app');
 }
 
-/* ========= DB HELPERS ========= */
-const CAT = { VARIABLE: PRODUCT_CONFIG.variableCats, FIXED: PRODUCT_CONFIG.fixedCats };
-
+/* ========= QUERIES ========= */
 async function qTransactions(){
-  const { data, error } = await sb.from('transactions')
-    .select('*')
-    .eq('household_id', HOUSEHOLD.id)
-    .gte('date', CURRENT_MONTH+'-01')
-    .lte('date', CURRENT_MONTH+'-31')
-    .order('date', { ascending:false });
-  if(error){ console.warn(error); return []; }
-  return data||[];
+  const from = CURRENT_MONTH+'-01';
+  const to   = lastDayOfMonthKey(CURRENT_MONTH);
+
+  if (OFFLINE){
+    return lget('transactions').filter(t=>
+      t.household_id===HOUSEHOLD.id && toInputDate(t.date)>=from && toInputDate(t.date)<=to
+    ).sort((a,b)=> new Date(b.date)-new Date(a.date));
+  }
+  return await safeQuery(
+    ()=> sb.from('transactions').select('*')
+          .eq('household_id', HOUSEHOLD.id)
+          .gte('date', from).lte('date', to)
+          .order('date', { ascending:false }),
+    ()=> []
+  );
 }
 async function qMonth(){
-  const { data, error } = await sb.from('months')
-    .select('*')
-    .eq('household_id', HOUSEHOLD.id)
-    .eq('year_month', CURRENT_MONTH)
-    .maybeSingle();
-  if(error){ console.warn(error); return null; }
-  return data;
+  if (OFFLINE){
+    return lfind('months', m=>m.household_id===HOUSEHOLD.id && m.year_month===CURRENT_MONTH) || null;
+  }
+  return await safeQuery(
+    ()=> sb.from('months').select('*').eq('household_id', HOUSEHOLD.id).eq('year_month', CURRENT_MONTH).maybeSingle(),
+    ()=> null
+  );
 }
 async function qRecurring(){
-  const { data } = await sb.from('recurring')
-    .select('*')
-    .eq('household_id', HOUSEHOLD.id)
-    .order('created_at', { ascending:false });
-  return data||[];
+  if (OFFLINE) return lget('recurring').filter(r=>r.household_id===HOUSEHOLD.id).sort((a,b)=> (a.created_at||'') < (b.created_at||'') ? 1 : -1);
+  return await safeQuery(
+    ()=> sb.from('recurring').select('*').eq('household_id', HOUSEHOLD.id).order('created_at',{ascending:false}),
+    ()=> []
+  );
 }
 async function qPensions(){
-  const { data } = await sb.from('pensions')
-    .select('*')
-    .eq('household_id', HOUSEHOLD.id)
-    .order('updated_at', { ascending:false });
-  return data||[];
+  if (OFFLINE) return lget('pensions').filter(p=>p.household_id===HOUSEHOLD.id).sort((a,b)=> (a.updated_at||'') < (b.updated_at||'') ? 1 : -1);
+  return await safeQuery(
+    ()=> sb.from('pensions').select('*').eq('household_id', HOUSEHOLD.id).order('updated_at',{ascending:false}),
+    ()=> []
+  );
 }
 async function qSavings(kind){
-  const { data } = await sb.from('savings_accounts')
-    .select('*')
-    .eq('household_id', HOUSEHOLD.id)
-    .eq('kind', kind)
-    .order('created_at', { ascending:false });
-  return data||[];
+  if (OFFLINE) return lget('savings_accounts').filter(s=>s.household_id===HOUSEHOLD.id && s.kind===kind).sort((a,b)=> (a.created_at||'') < (b.created_at||'') ? 1 : -1);
+  return await safeQuery(
+    ()=> sb.from('savings_accounts').select('*').eq('household_id', HOUSEHOLD.id).eq('kind', kind).order('created_at',{ascending:false}),
+    ()=> []
+  );
 }
 async function qPetty(){
-  const { data:pc } = await sb.from('petty_cash').select('*').eq('household_id', HOUSEHOLD.id).maybeSingle();
-  const { data:tx } = await sb.from('petty_tx').select('*').eq('household_id', HOUSEHOLD.id).order('date', { ascending:false });
+  if (OFFLINE){
+    const pc = lfind('petty_cash', p=>p.household_id===HOUSEHOLD.id) || {budget_cap:0};
+    const tx = lget('petty_tx').filter(t=>t.household_id===HOUSEHOLD.id).sort((a,b)=> new Date(b.date)-new Date(a.date));
+    return { pc, tx };
+  }
+  const pc = await safeQuery(()=> sb.from('petty_cash').select('*').eq('household_id', HOUSEHOLD.id).maybeSingle(), ()=> ({budget_cap:0}) );
+  const tx = await safeQuery(()=> sb.from('petty_tx').select('*').eq('household_id', HOUSEHOLD.id).order('date',{ascending:false}), ()=> [] );
   return { pc: pc||{budget_cap:0}, tx: tx||[] };
 }
 async function qNotes(){
-  const { data } = await sb.from('notes').select('*').eq('household_id', HOUSEHOLD.id).order('created_at',{ascending:false});
-  return data||[];
+  if (OFFLINE) return lget('notes').filter(n=>n.household_id===HOUSEHOLD.id).sort((a,b)=> (a.created_at||'') < (b.created_at||'') ? 1 : -1);
+  return await safeQuery(
+    ()=> sb.from('notes').select('*').eq('household_id', HOUSEHOLD.id).order('created_at',{ascending:false}),
+    ()=> []
+  );
 }
 
 /* ========= TOTALS / RENDER ========= */
@@ -675,7 +794,6 @@ async function computeTotals(){
   const [month, tx, rec, pens] = await Promise.all([qMonth(), qTransactions(), qRecurring(), qPensions()]);
   let net=0, gross=0, exp=0;
   const incomes=[], expenses=[];
-  (tx||()).forEach?.(()=>{}); // guard for older browsers
   (tx||[]).forEach(t=>{
     if(t.type==='income'){ net += toNumber(t.amount); gross += toNumber(t.gross || t.amount); incomes.push(t); }
     else { exp += toNumber(t.amount); expenses.push(t); }
@@ -683,7 +801,7 @@ async function computeTotals(){
   const fixed = (rec||[]).reduce((s,r)=> s + toNumber(r.amount||0), 0);
   const budget = toNumber(month?.total_budget||0);
   const overdraft = toNumber(month?.overdraft||0);
-  const surplus = net - budget; // לפי האפיון
+  const surplus = net - budget;
   const pensTotal = (pens||[]).reduce((s,p)=> s+toNumber(p.balance||0), 0);
   return { month, net, gross, exp, fixed, budget, overdraft, surplus, incomes, expenses, pensTotal };
 }
@@ -699,7 +817,6 @@ function fillSelect(sel, list, firstLabel){
     sel.appendChild(o);
   });
 }
-
 function initCategorySelects(){
   fillSelect(document.getElementById('catSelect'), CAT.VARIABLE, "— בחר קטגוריה —");
   fillSelect(document.getElementById('filterCat'), CAT.VARIABLE, "כל הקטגוריות");
@@ -753,12 +870,9 @@ async function renderIncomeList(){
   });
 }
 
-<script>
-/* ========= EXPENSES (VARIABLE) ========= */
+/* ========= EXPENSES ========= */
 async function renderExpenses(){
   const tx = await qTransactions();
-
-  // מסננים
   const text  = (document.getElementById('filterText')?.value || '').trim().toLowerCase();
   const cat   = document.getElementById('filterCat')?.value || '';
   const fFrom = document.getElementById('filterFrom')?.value || '';
@@ -813,7 +927,7 @@ async function renderExpenses(){
   });
 }
 
-/* ========= FIXED (RECURRING) ========= */
+/* ========= FIXED ========= */
 async function renderFixedList(){
   const list = await qRecurring();
   const ul = document.getElementById('fixedList');
@@ -843,24 +957,7 @@ async function renderFixedList(){
   });
 }
 
-document.getElementById('formFixedAdd')?.addEventListener('submit', async (e)=>{
-  e.preventDefault();
-  const name   = document.getElementById('fixName').value || 'פריט קבוע';
-  const amount = toNumber(document.getElementById('fixAmount').value);
-  const note   = document.getElementById('fixNote').value || '';
-  if(!HOUSEHOLD?.id){ toast('נדרש משק בית'); return; }
-  const { error } = await sb.from('recurring').insert({
-    household_id: HOUSEHOLD.id, name, amount, note
-  });
-  if(error){ console.warn(error); toast('שגיאה בשמירת קבוע'); return; }
-  document.getElementById('fixAmount').value='';
-  document.getElementById('fixNote').value='';
-  await renderFixedList();
-  await renderHeaderAndGauge();
-});
-
 /* ========= SAVINGS ========= */
-// פנסיה
 async function renderPensions(){
   const list = await qPensions();
   const ul = document.getElementById('pensionList');
@@ -886,83 +983,6 @@ async function renderPensions(){
   });
   if(totEl) totEl.textContent = ils(total);
 }
-
-document.getElementById('formPensionAdd')?.addEventListener('submit', async (e)=>{
-  e.preventDefault();
-  const owner   = document.getElementById('penOwner').value || '';
-  const balance = toNumber(document.getElementById('penBalance').value);
-  const monthly = toNumber(document.getElementById('penMonthly').value);
-  if(!HOUSEHOLD?.id){ toast('נדרש משק בית'); return; }
-  const { error } = await sb.from('pensions').insert({
-    household_id: HOUSEHOLD.id, owner, balance, monthly
-  });
-  if(error){ console.warn(error); toast('שגיאה בפנסיה'); return; }
-  document.getElementById('penOwner').value='';
-  document.getElementById('penBalance').value='';
-  document.getElementById('penMonthly').value='';
-  await renderPensions();
-  await renderHeaderAndGauge();
-});
-
-// קרן השתלמות / פיקדון / מטרה
-function bindMonthlyToggle(checkboxId, inputId){
-  const cb=document.getElementById(checkboxId);
-  const inp=document.getElementById(inputId);
-  cb?.addEventListener('change', ()=>{ inp.disabled = !cb.checked; if(!cb.checked) inp.value=''; });
-}
-bindMonthlyToggle('krHasMonthly','krMonthly');
-bindMonthlyToggle('depHasMonthly','depAdd');
-
-document.getElementById('formKeren')?.addEventListener('submit', async (e)=>{
-  e.preventDefault();
-  const name = document.getElementById('krName').value || '';
-  const balance = toNumber(document.getElementById('krBalance').value);
-  const monthly = document.getElementById('krHasMonthly').checked ? toNumber(document.getElementById('krMonthly').value) : 0;
-  const { error } = await sb.from('savings_accounts').insert({
-    household_id: HOUSEHOLD.id, kind:'keren', name, balance, monthly
-  });
-  if(error){ console.warn(error); toast('שגיאה בקרן'); return; }
-  document.getElementById('krName').value='';
-  document.getElementById('krBalance').value='';
-  document.getElementById('krHasMonthly').checked=false;
-  document.getElementById('krMonthly').value=''; document.getElementById('krMonthly').disabled=true;
-  await renderSavingsTabs();
-  await renderHeaderAndGauge();
-});
-
-document.getElementById('formDeposit')?.addEventListener('submit', async (e)=>{
-  e.preventDefault();
-  const name = document.getElementById('depName').value || '';
-  const balance = toNumber(document.getElementById('depBalance').value);
-  const monthly = document.getElementById('depHasMonthly').checked ? toNumber(document.getElementById('depAdd').value) : 0;
-  const { error } = await sb.from('savings_accounts').insert({
-    household_id: HOUSEHOLD.id, kind:'deposit', name, balance, monthly
-  });
-  if(error){ console.warn(error); toast('שגיאה בפיקדון'); return; }
-  document.getElementById('depName').value='';
-  document.getElementById('depBalance').value='';
-  document.getElementById('depHasMonthly').checked=false;
-  document.getElementById('depAdd').value=''; document.getElementById('depAdd').disabled=true;
-  await renderSavingsTabs();
-  await renderHeaderAndGauge();
-});
-
-document.getElementById('formGoal')?.addEventListener('submit', async (e)=>{
-  e.preventDefault();
-  const name = document.getElementById('goalName').value || '';
-  const balance = toNumber(document.getElementById('goalTarget').value);
-  const monthly = toNumber(document.getElementById('goalMonthly').value);
-  const { error } = await sb.from('savings_accounts').insert({
-    household_id: HOUSEHOLD.id, kind:'goal', name, balance, monthly
-  });
-  if(error){ console.warn(error); toast('שגיאה בתכנית'); return; }
-  document.getElementById('goalName').value='';
-  document.getElementById('goalTarget').value='';
-  document.getElementById('goalMonthly').value='';
-  await renderSavingsTabs();
-  await renderHeaderAndGauge();
-});
-
 async function renderSavingsList(kind, listId){
   const list = await qSavings(kind);
   const ul = document.getElementById(listId);
@@ -991,7 +1011,6 @@ async function renderSavingsList(kind, listId){
     ul.appendChild(li);
   });
 }
-
 async function renderSavingsTabs(){
   await Promise.all([
     renderPensions(),
@@ -1001,7 +1020,7 @@ async function renderSavingsTabs(){
   ]);
 }
 
-/* ========= PETTY CASH ========= */
+/* ========= PETTY ========= */
 function setPettyGauge(p, spent, left){
   const path = document.getElementById('pettyVal');
   if(!path) return;
@@ -1016,7 +1035,6 @@ function setPettyGauge(p, spent, left){
   leftEl.textContent = ils(left);
   leftEl.className = (left < 0 ? 'text-red-400 ' : '') + 'font-semibold num';
 }
-
 async function renderPetty(){
   const { pc, tx } = await qPetty();
   const cap = toNumber(pc.budget_cap||0);
@@ -1044,37 +1062,6 @@ async function renderPetty(){
   });
 }
 
-document.getElementById('pettyBudgetBtn')?.addEventListener('click', async ()=>{
-  const cur = (await qPetty()).pc?.budget_cap || 0;
-  const v = prompt('תקציב קופה קטנה (₪):', String(cur));
-  if (v==null) return;
-  const cap = toNumber(v);
-  if(!HOUSEHOLD?.id){ toast('נדרש משק בית'); return; }
-  const { error } = await sb
-    .from('petty_cash')
-    .upsert({ household_id: HOUSEHOLD.id, budget_cap: cap }, { onConflict:'household_id' });
-  if(error){ console.warn(error); toast('שגיאה בתקציב'); return; }
-  await renderPetty();
-});
-
-document.getElementById('formPettyExpense')?.addEventListener('submit', async (e)=>{
-  e.preventDefault();
-  const amount = toNumber(document.getElementById('pettyAmount').value);
-  const merchant= document.getElementById('pettyMerchant').value || '';
-  const category= document.getElementById('pettyCat').value || '';
-  const date    = document.getElementById('pettyDate').value || new Date().toISOString();
-  if(!amount || !category){ toast('סכום וקטגוריה חובה'); return; }
-  const { error } = await sb.from('petty_tx').insert({
-    id: uuid(), household_id: HOUSEHOLD.id, amount, merchant, category, date
-  });
-  if(error){ console.warn(error); toast('שגיאה בהוספה'); return; }
-  document.getElementById('pettyAmount').value='';
-  document.getElementById('pettyMerchant').value='';
-  document.getElementById('pettyCat').value='';
-  document.getElementById('pettyDate').value='';
-  await renderPetty();
-});
-
 /* ========= NOTES & CALENDAR ========= */
 let CAL_CURSOR = new Date();
 function startOfMonth(d){ return new Date(d.getFullYear(), d.getMonth(), 1); }
@@ -1089,7 +1076,7 @@ async function buildCalendar(){
   const e = endOfMonth(CAL_CURSOR);
   title.textContent = s.toLocaleDateString('he-IL', { month:'long', year:'numeric' });
 
-  const startDay = (s.getDay()+6)%7; // הפוך ל-שני=0 אם תרצה; כאן א'=0 כבר בפריסה שלנו
+  const startDay = (s.getDay()+6)%7;
   for(let i=0;i<startDay;i++){
     const cell=document.createElement('div');
     cell.className='p-2 h-10 rounded';
@@ -1108,7 +1095,6 @@ async function buildCalendar(){
     grid.appendChild(cell);
   }
 }
-
 async function renderNotes(){
   const notes = await qNotes();
   const gen = document.getElementById('notesGeneral');
@@ -1130,7 +1116,6 @@ async function renderNotes(){
   await buildCalendar();
   await renderNotesDay(new Date().toISOString().slice(0,10));
 }
-
 async function renderNotesDay(dayISO){
   const wrap = document.getElementById('notesDay');
   if(!wrap) return;
@@ -1150,99 +1135,11 @@ async function renderNotesDay(dayISO){
   });
 }
 
-document.getElementById('formNote')?.addEventListener('submit', async (e)=>{
-  e.preventDefault();
-  const title = document.getElementById('noteTitle').value || '';
-  const body  = document.getElementById('noteBody').value || '';
-  const due   = document.getElementById('noteDue').value || null;
-  const { error } = await sb.from('notes').insert({
-    id: uuid(), household_id: HOUSEHOLD.id, title, body, due_date: due
-  });
-  if(error){ console.warn(error); toast('שגיאה בהערה'); return; }
-  document.getElementById('noteTitle').value='';
-  document.getElementById('noteBody').value='';
-  document.getElementById('noteDue').value='';
-  await renderNotes();
-});
-
-/* ========= MONTH PICKER ========= */
-function updateMonthLabel(){
-  const el = document.getElementById('currentMonthLabel');
-  if(el){
-    const [y,m]=CURRENT_MONTH.split('-').map(n=>Number(n));
-    el.textContent = new Date(y, m-1, 1).toLocaleDateString('he-IL', { month:'long', year:'numeric' });
-  }
-}
-
-document.getElementById('btnMonthPicker')?.addEventListener('click', ()=> openMonthPicker());
-document.getElementById('mpClose')?.addEventListener('click', ()=> closeMonthPicker());
-document.getElementById('mpSearch')?.addEventListener('input', buildMonthGrid);
-
-function openMonthPicker(){
-  const dlg = document.getElementById('monthPicker');
-  dlg?.classList.remove('hidden');
-  buildMonthGrid();
-}
-function closeMonthPicker(){
-  const dlg = document.getElementById('monthPicker');
-  dlg?.classList.add('hidden');
-}
-
-async function buildMonthGrid(){
-  const grid = document.getElementById('mpGrid');
-  if(!grid) return;
-  grid.innerHTML='';
-  const q = (document.getElementById('mpSearch')?.value || '').trim().toLowerCase();
-  // 24 חודשים אחורה + 12 קדימה
-  const base = new Date();
-  const months=[];
-  for(let i=24;i>=0;i--){
-    const d=new Date(base.getFullYear(), base.getMonth()-i, 1);
-    months.push(d);
-  }
-  for(let i=1;i<=12;i++){
-    const d=new Date(base.getFullYear(), base.getMonth()+i, 1);
-    months.push(d);
-  }
-  months
-    .map(d=>({ key: ym(d), label: d.toLocaleDateString('he-IL',{ month:'long', year:'numeric' }) }))
-    .filter(m => !q || m.key.includes(q) || m.label.includes(q))
-    .forEach(m=>{
-      const b=document.createElement('button');
-      b.type='button';
-      b.className='input text-left hover:bg-slate-800';
-      b.textContent = `${m.label} (${m.key})`;
-      if (m.key===CURRENT_MONTH) b.classList.add('ring-1','ring-emerald-500/40');
-      b.addEventListener('click', async ()=>{
-        CURRENT_MONTH = m.key;
-        closeMonthPicker();
-        await renderAll();
-      });
-      grid.appendChild(b);
-    });
-}
-
-/* ========= QUICK ACTIONS ========= */
-document.getElementById('btnBudgetQuickEdit')?.addEventListener('click', async ()=>{
-  const m = await qMonth();
-  const cur = toNumber(m?.total_budget||0);
-  const v = prompt('תקציב חודשי (₪):', String(cur));
-  if(v==null) return;
-  const { error } = await sb.from('months').upsert({
-    household_id: HOUSEHOLD.id, year_month: CURRENT_MONTH, total_budget: toNumber(v), overdraft: m?.overdraft||0
-  }, { onConflict:'household_id,year_month' });
-  if(error){ console.warn(error); toast('שגיאה בעדכון תקציב'); return; }
-  await renderHeaderAndGauge();
-});
-
+/* ========= EXPORT ========= */
 document.getElementById('btnExport')?.addEventListener('click', ()=> exportCSV());
-
-/* ========= EXPORT CSV ========= */
 async function exportCSV(){
   const tx = await qTransactions();
-  const rows = [
-    ['type','amount','gross','merchant','category','date'].join(',')
-  ];
+  const rows = [['type','amount','gross','merchant','category','date'].join(',')];
   (tx||[]).forEach(t=>{
     const line = [
       t.type||'',
@@ -1262,7 +1159,7 @@ async function exportCSV(){
   URL.revokeObjectURL(url);
 }
 
-/* ========= ADD/EDIT TRANSACTIONS ========= */
+/* ========= ADD/EDIT ========= */
 document.getElementById('formExpense')?.addEventListener('submit', async (e)=>{
   e.preventDefault();
   const amount = toNumber(document.getElementById('expAmount').value);
@@ -1270,10 +1167,11 @@ document.getElementById('formExpense')?.addEventListener('submit', async (e)=>{
   const category= document.getElementById('catSelect').value || '';
   const date    = document.getElementById('expDate').value || new Date().toISOString();
   if(!amount || !category){ toast('סכום וקטגוריה חובה'); return; }
-  const { error } = await sb.from('transactions').insert({
-    id: uuid(), household_id: HOUSEHOLD.id, type:'expense', amount, merchant, category, date
-  });
-  if(error){ console.warn(error); toast('שגיאה בהוספה'); return; }
+
+  const row = { id: uuid(), household_id: HOUSEHOLD.id, type:'expense', amount, merchant, category, date };
+  if (OFFLINE) ladd('transactions', row);
+  else await safeQuery(()=> sb.from('transactions').insert(row), ()=> ladd('transactions', row));
+
   document.getElementById('expAmount').value='';
   document.getElementById('expMerchant').value='';
   document.getElementById('catSelect').value='';
@@ -1285,7 +1183,6 @@ document.getElementById('formExpense')?.addEventListener('submit', async (e)=>{
 document.getElementById('btnAddIncomeInline')?.addEventListener('click', ()=>{
   document.getElementById('formIncomeInline')?.classList.toggle('hidden');
 });
-
 document.getElementById('formIncomeInline')?.addEventListener('submit', async (e)=>{
   e.preventDefault();
   const net   = toNumber(document.getElementById('incomeNet').value);
@@ -1293,10 +1190,11 @@ document.getElementById('formIncomeInline')?.addEventListener('submit', async (e
   const src   = document.getElementById('incomeSource').value || '';
   const date  = document.getElementById('incomeDate').value || new Date().toISOString();
   if(!net){ toast('נטו חובה'); return; }
-  const { error } = await sb.from('transactions').insert({
-    id: uuid(), household_id: HOUSEHOLD.id, type:'income', amount: net, gross, category: src, merchant: 'הכנסה', date
-  });
-  if(error){ console.warn(error); toast('שגיאה בהכנסה'); return; }
+
+  const row = { id: uuid(), household_id: HOUSEHOLD.id, type:'income', amount: net, gross, category: src, merchant: 'הכנסה', date };
+  if (OFFLINE) ladd('transactions', row);
+  else await safeQuery(()=> sb.from('transactions').insert(row), ()=> ladd('transactions', row));
+
   document.getElementById('incomeNet').value='';
   document.getElementById('incomeGross').value='';
   document.getElementById('incomeSource').value='';
@@ -1305,90 +1203,317 @@ document.getElementById('formIncomeInline')?.addEventListener('submit', async (e
   await renderHeaderAndGauge();
 });
 
-/* ========= SIMPLE EDITORS ========= */
-async function openEdit(id){
-  const { data, error } = await sb.from('transactions').select('*').eq('id', id).maybeSingle();
-  if(error || !data){ toast('לא נמצא'); return; }
-  const kind = data.type==='income' ? 'הכנסה' : 'הוצאה';
-  const v = prompt(`${kind} • עדכון סכום (₪) – או ריק למחיקה`, String(toNumber(data.amount||0)));
-  if(v===null) return;
-  if(v===''){
-    await sb.from('transactions').delete().eq('id', id);
-  }else{
-    await sb.from('transactions').update({ amount: toNumber(v) }).eq('id', id);
-  }
-  await renderHeaderAndGauge();
-  await renderIncomeList();
-  await renderExpenses();
-}
-async function openFixedEdit(id){
-  const { data } = await sb.from('recurring').select('*').eq('id', id).maybeSingle();
-  if(!data) return;
-  const v = prompt(`קבוע "${data.name}" – סכום (₪) – ריק למחיקה`, String(toNumber(data.amount||0)));
-  if(v===null) return;
-  if(v===''){ await sb.from('recurring').delete().eq('id', id); }
-  else{ await sb.from('recurring').update({ amount: toNumber(v) }).eq('id', id); }
+/* === Fixed add === */
+document.getElementById('formFixedAdd')?.addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const name   = document.getElementById('fixName').value || 'פריט קבוע';
+  const amount = toNumber(document.getElementById('fixAmount').value);
+  const note   = document.getElementById('fixNote').value || '';
+  const row = { id: uuid(), household_id: HOUSEHOLD.id, name, amount, note, created_at: new Date().toISOString() };
+  if (OFFLINE) ladd('recurring', row);
+  else await safeQuery(()=> sb.from('recurring').insert(row), ()=> ladd('recurring', row));
+  document.getElementById('fixAmount').value='';
+  document.getElementById('fixNote').value='';
   await renderFixedList();
   await renderHeaderAndGauge();
+});
+
+/* === Savings adds === */
+document.getElementById('formPensionAdd')?.addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const owner   = document.getElementById('penOwner').value || '';
+  const balance = toNumber(document.getElementById('penBalance').value);
+  const monthly = toNumber(document.getElementById('penMonthly').value);
+  const row = { id: uuid(), household_id: HOUSEHOLD.id, owner, balance, monthly, updated_at: new Date().toISOString() };
+  if (OFFLINE) ladd('pensions', row);
+  else await safeQuery(()=> sb.from('pensions').insert(row), ()=> ladd('pensions', row));
+  document.getElementById('penOwner').value='';
+  document.getElementById('penBalance').value='';
+  document.getElementById('penMonthly').value='';
+  await renderPensions(); await renderHeaderAndGauge();
+});
+document.getElementById('formKeren')?.addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const name = document.getElementById('krName').value || '';
+  const balance = toNumber(document.getElementById('krBalance').value);
+  const monthly = document.getElementById('krHasMonthly').checked ? toNumber(document.getElementById('krMonthly').value) : 0;
+  const row = { id: uuid(), household_id: HOUSEHOLD.id, kind:'keren', name, balance, monthly, created_at: new Date().toISOString() };
+  if (OFFLINE) ladd('savings_accounts', row);
+  else await safeQuery(()=> sb.from('savings_accounts').insert(row), ()=> ladd('savings_accounts', row));
+  document.getElementById('krName').value='';
+  document.getElementById('krBalance').value='';
+  document.getElementById('krHasMonthly').checked=false;
+  document.getElementById('krMonthly').value=''; document.getElementById('krMonthly').disabled=true;
+  await renderSavingsTabs(); await renderHeaderAndGauge();
+});
+document.getElementById('formDeposit')?.addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const name = document.getElementById('depName').value || '';
+  const balance = toNumber(document.getElementById('depBalance').value);
+  const monthly = document.getElementById('depHasMonthly').checked ? toNumber(document.getElementById('depAdd').value) : 0;
+  const row = { id: uuid(), household_id: HOUSEHOLD.id, kind:'deposit', name, balance, monthly, created_at: new Date().toISOString() };
+  if (OFFLINE) ladd('savings_accounts', row);
+  else await safeQuery(()=> sb.from('savings_accounts').insert(row), ()=> ladd('savings_accounts', row));
+  document.getElementById('depName').value='';
+  document.getElementById('depBalance').value='';
+  document.getElementById('depHasMonthly').checked=false;
+  document.getElementById('depAdd').value=''; document.getElementById('depAdd').disabled=true;
+  await renderSavingsTabs(); await renderHeaderAndGauge();
+});
+document.getElementById('formGoal')?.addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const name = document.getElementById('goalName').value || '';
+  const balance = toNumber(document.getElementById('goalTarget').value);
+  const monthly = toNumber(document.getElementById('goalMonthly').value);
+  const row = { id: uuid(), household_id: HOUSEHOLD.id, kind:'goal', name, balance, monthly, created_at: new Date().toISOString() };
+  if (OFFLINE) ladd('savings_accounts', row);
+  else await safeQuery(()=> sb.from('savings_accounts').insert(row), ()=> ladd('savings_accounts', row));
+  document.getElementById('goalName').value='';
+  document.getElementById('goalTarget').value='';
+  document.getElementById('goalMonthly').value='';
+  await renderSavingsTabs(); await renderHeaderAndGauge();
+});
+
+/* === Petty === */
+document.getElementById('pettyBudgetBtn')?.addEventListener('click', async ()=>{
+  const cur = (await qPetty()).pc?.budget_cap || 0;
+  const v = prompt('תקציב קופה קטנה (₪):', String(cur));
+  if (v==null) return;
+  const cap = toNumber(v);
+  const row = { household_id: HOUSEHOLD.id, budget_cap: cap };
+  if (OFFLINE){
+    const exist = lfind('petty_cash', p=>p.household_id===HOUSEHOLD.id);
+    if (exist) lupdate('petty_cash', exist.id, { budget_cap: cap });
+    else { row.id = uuid(); ladd('petty_cash', row); }
+  } else {
+    await safeQuery(()=> sb.from('petty_cash').upsert(row, { onConflict:'household_id' }), ()=> {
+      const exist = lfind('petty_cash', p=>p.household_id===HOUSEHOLD.id);
+      if (exist) lupdate('petty_cash', exist.id, { budget_cap: cap });
+      else { row.id = uuid(); ladd('petty_cash', row); }
+    });
+  }
+  await renderPetty();
+});
+document.getElementById('formPettyExpense')?.addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const amount = toNumber(document.getElementById('pettyAmount').value);
+  const merchant= document.getElementById('pettyMerchant').value || '';
+  const category= document.getElementById('pettyCat').value || '';
+  const date    = document.getElementById('pettyDate').value || new Date().toISOString();
+  if(!amount || !category){ toast('סכום וקטגוריה חובה'); return; }
+
+  const row = { id: uuid(), household_id: HOUSEHOLD.id, amount, merchant, category, date };
+  if (OFFLINE) ladd('petty_tx', row);
+  else await safeQuery(()=> sb.from('petty_tx').insert(row), ()=> ladd('petty_tx', row));
+
+  document.getElementById('pettyAmount').value='';
+  document.getElementById('pettyMerchant').value='';
+  document.getElementById('pettyCat').value='';
+  document.getElementById('pettyDate').value='';
+  await renderPetty();
+});
+
+/* === Notes === */
+document.getElementById('formNote')?.addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const title = document.getElementById('noteTitle').value || '';
+  const body  = document.getElementById('noteBody').value || '';
+  const due   = document.getElementById('noteDue').value || null;
+  const row = { id: uuid(), household_id: HOUSEHOLD.id, title, body, due_date: due, created_at: new Date().toISOString() };
+  if (OFFLINE) ladd('notes', row);
+  else await safeQuery(()=> sb.from('notes').insert(row), ()=> ladd('notes', row));
+  document.getElementById('noteTitle').value='';
+  document.getElementById('noteBody').value='';
+  document.getElementById('noteDue').value='';
+  await renderNotes();
+});
+
+/* ========= QUICK ACTIONS ========= */
+document.getElementById('btnBudgetQuickEdit')?.addEventListener('click', async ()=>{
+  const m = await qMonth();
+  const cur = toNumber(m?.total_budget||0);
+  const v = prompt('תקציב חודשי (₪):', String(cur));
+  if(v==null) return;
+  const next = { household_id: HOUSEHOLD.id, year_month: CURRENT_MONTH, total_budget: toNumber(v), overdraft: m?.overdraft||0 };
+  if (OFFLINE){
+    const exist = lfind('months', x=>x.household_id===HOUSEHOLD.id && x.year_month===CURRENT_MONTH);
+    if (exist) lupdate('months', exist.id, { total_budget: next.total_budget });
+    else { next.id = uuid(); ladd('months', next); }
+  } else {
+    await safeQuery(()=> sb.from('months').upsert(next, { onConflict:'household_id,year_month' }), ()=> {
+      const exist = lfind('months', x=>x.household_id===HOUSEHOLD.id && x.year_month===CURRENT_MONTH);
+      if (exist) lupdate('months', exist.id, { total_budget: next.total_budget });
+      else { next.id = uuid(); ladd('months', next); }
+    });
+  }
+  await renderHeaderAndGauge();
+});
+
+document.getElementById('btnMonthPicker')?.addEventListener('click', ()=> openMonthPicker());
+document.getElementById('mpClose')?.addEventListener('click', ()=> closeMonthPicker());
+document.getElementById('mpSearch')?.addEventListener('input', buildMonthGrid);
+
+/* ========= MONTH PICKER ========= */
+function updateMonthLabel(){
+  const el = document.getElementById('currentMonthLabel');
+  if(el){
+    const [y,m]=CURRENT_MONTH.split('-').map(n=>Number(n));
+    el.textContent = new Date(y, m-1, 1).toLocaleDateString('he-IL', { month:'long', year:'numeric' });
+  }
+}
+function openMonthPicker(){
+  document.getElementById('monthPicker')?.classList.remove('hidden');
+  buildMonthGrid();
+}
+function closeMonthPicker(){
+  document.getElementById('monthPicker')?.classList.add('hidden');
+}
+async function buildMonthGrid(){
+  const grid = document.getElementById('mpGrid');
+  if(!grid) return;
+  grid.innerHTML='';
+  const q = (document.getElementById('mpSearch')?.value || '').trim().toLowerCase();
+  const base = new Date();
+  const months=[];
+  for(let i=24;i>=0;i--) months.push(new Date(base.getFullYear(), base.getMonth()-i, 1));
+  for(let i=1;i<=12;i++) months.push(new Date(base.getFullYear(), base.getMonth()+i, 1));
+  months
+    .map(d=>({ key: ym(d), label: d.toLocaleDateString('he-IL',{ month:'long', year:'numeric' }) }))
+    .filter(m => !q || m.key.includes(q) || m.label.includes(q))
+    .forEach(m=>{
+      const b=document.createElement('button');
+      b.type='button';
+      b.className='input text-left hover:bg-slate-800';
+      b.textContent = `${m.label} (${m.key})`;
+      if (m.key===CURRENT_MONTH) b.classList.add('ring-1','ring-emerald-500/40');
+      b.addEventListener('click', async ()=>{
+        CURRENT_MONTH = m.key;
+        closeMonthPicker();
+        await renderAll();
+      });
+      grid.appendChild(b);
+    });
+}
+
+/* ========= EDITORS ========= */
+async function openEdit(id){
+  if (OFFLINE){
+    const data = lfind('transactions', t=>t.id===id);
+    if(!data){ toast('לא נמצא'); return; }
+    const kind = data.type==='income' ? 'הכנסה' : 'הוצאה';
+    const v = prompt(`${kind} • עדכון סכום (₪) – או ריק למחיקה`, String(toNumber(data.amount||0)));
+    if(v===null) return;
+    if(v===''){ lremove('transactions', id); }
+    else{ lupdate('transactions', id, { amount: toNumber(v) }); }
+  } else {
+    const { data } = await safeQuery(()=> sb.from('transactions').select('*').eq('id', id).maybeSingle(), ()=> lfind('transactions', t=>t.id===id) );
+    if(!data){ toast('לא נמצא'); return; }
+    const kind = data.type==='income' ? 'הכנסה' : 'הוצאה';
+    const v = prompt(`${kind} • עדכון סכום (₪) – או ריק למחיקה`, String(toNumber(data.amount||0)));
+    if(v===null) return;
+    if(v===''){ await safeQuery(()=> sb.from('transactions').delete().eq('id', id), ()=> lremove('transactions', id)); }
+    else{ await safeQuery(()=> sb.from('transactions').update({ amount: toNumber(v) }).eq('id', id), ()=> lupdate('transactions', id, { amount: toNumber(v) })); }
+  }
+  await renderHeaderAndGauge(); await renderIncomeList(); await renderExpenses();
+}
+async function openFixedEdit(id){
+  if (OFFLINE){
+    const r = lfind('recurring', x=>x.id===id); if(!r) return;
+    const v = prompt(`קבוע "${r.name}" – סכום (₪) – ריק למחיקה`, String(toNumber(r.amount||0)));
+    if(v===null) return;
+    if(v==='') lremove('recurring', id); else lupdate('recurring', id, { amount: toNumber(v) });
+  } else {
+    const { data } = await safeQuery(()=> sb.from('recurring').select('*').eq('id', id).maybeSingle(), ()=> lfind('recurring', x=>x.id===id) );
+    if(!data) return;
+    const v = prompt(`קבוע "${data.name}" – סכום (₪) – ריק למחיקה`, String(toNumber(data.amount||0)));
+    if(v===null) return;
+    if(v===''){ await safeQuery(()=> sb.from('recurring').delete().eq('id', id), ()=> lremove('recurring', id)); }
+    else { await safeQuery(()=> sb.from('recurring').update({ amount: toNumber(v) }).eq('id', id), ()=> lupdate('recurring', id, { amount: toNumber(v) })); }
+  }
+  await renderFixedList(); await renderHeaderAndGauge();
 }
 async function openSavingsEdit(id){
-  const { data } = await sb.from('savings_accounts').select('*').eq('id', id).maybeSingle();
-  if(!data) return;
-  const v = prompt(`"${data.name}" – יתרה (₪) – ריק למחיקה`, String(toNumber(data.balance||0)));
-  if(v===null) return;
-  if(v===''){ await sb.from('savings_accounts').delete().eq('id', id); }
-  else{ await sb.from('savings_accounts').update({ balance: toNumber(v) }).eq('id', id); }
-  await renderSavingsTabs();
-  await renderHeaderAndGauge();
+  if (OFFLINE){
+    const s = lfind('savings_accounts', x=>x.id===id); if(!s) return;
+    const v = prompt(`"${s.name}" – יתרה (₪) – ריק למחיקה`, String(toNumber(s.balance||0)));
+    if(v===null) return;
+    if(v==='') lremove('savings_accounts', id); else lupdate('savings_accounts', id, { balance: toNumber(v) });
+  } else {
+    const { data } = await safeQuery(()=> sb.from('savings_accounts').select('*').eq('id', id).maybeSingle(), ()=> lfind('savings_accounts', x=>x.id===id) );
+    if(!data) return;
+    const v = prompt(`"${data.name}" – יתרה (₪) – ריק למחיקה`, String(toNumber(data.balance||0)));
+    if(v===null) return;
+    if(v===''){ await safeQuery(()=> sb.from('savings_accounts').delete().eq('id', id), ()=> lremove('savings_accounts', id)); }
+    else { await safeQuery(()=> sb.from('savings_accounts').update({ balance: toNumber(v) }).eq('id', id), ()=> lupdate('savings_accounts', id, { balance: toNumber(v) })); }
+  }
+  await renderSavingsTabs(); await renderHeaderAndGauge();
 }
 async function openPensionEdit(id){
-  const { data } = await sb.from('pensions').select('*').eq('id', id).maybeSingle();
-  if(!data) return;
-  const v = prompt(`"${data.owner}" – יתרה (₪) – ריק למחיקה`, String(toNumber(data.balance||0)));
-  if(v===null) return;
-  if(v===''){ await sb.from('pensions').delete().eq('id', id); }
-  else{ await sb.from('pensions').update({ balance: toNumber(v) }).eq('id', id); }
-  await renderPensions();
-  await renderHeaderAndGauge();
+  if (OFFLINE){
+    const p = lfind('pensions', x=>x.id===id); if(!p) return;
+    const v = prompt(`"${p.owner}" – יתרה (₪) – ריק למחיקה`, String(toNumber(p.balance||0)));
+    if(v===null) return;
+    if(v==='') lremove('pensions', id); else lupdate('pensions', id, { balance: toNumber(v) });
+  } else {
+    const { data } = await safeQuery(()=> sb.from('pensions').select('*').eq('id', id).maybeSingle(), ()=> lfind('pensions', x=>x.id===id) );
+    if(!data) return;
+    const v = prompt(`"${data.owner}" – יתרה (₪) – ריק למחיקה`, String(toNumber(data.balance||0)));
+    if(v===null) return;
+    if(v===''){ await safeQuery(()=> sb.from('pensions').delete().eq('id', id), ()=> lremove('pensions', id)); }
+    else { await safeQuery(()=> sb.from('pensions').update({ balance: toNumber(v) }).eq('id', id), ()=> lupdate('pensions', id, { balance: toNumber(v) })); }
+  }
+  await renderPensions(); await renderHeaderAndGauge();
 }
 async function openPettyEdit(id){
-  const { data } = await sb.from('petty_tx').select('*').eq('id', id).maybeSingle();
-  if(!data) return;
-  const v = prompt(`קופה קטנה – סכום (₪) – ריק למחיקה`, String(toNumber(data.amount||0)));
-  if(v===null) return;
-  if(v===''){ await sb.from('petty_tx').delete().eq('id', id); }
-  else{ await sb.from('petty_tx').update({ amount: toNumber(v) }).eq('id', id); }
+  if (OFFLINE){
+    const p = lfind('petty_tx', x=>x.id===id); if(!p) return;
+    const v = prompt(`קופה קטנה – סכום (₪) – ריק למחיקה`, String(toNumber(p.amount||0)));
+    if(v===null) return;
+    if(v==='') lremove('petty_tx', id); else lupdate('petty_tx', id, { amount: toNumber(v) });
+  } else {
+    const { data } = await safeQuery(()=> sb.from('petty_tx').select('*').eq('id', id).maybeSingle(), ()=> lfind('petty_tx', x=>x.id===id) );
+    if(!data) return;
+    const v = prompt(`קופה קטנה – סכום (₪) – ריק למחיקה`, String(toNumber(data.amount||0)));
+    if(v===null) return;
+    if(v===''){ await safeQuery(()=> sb.from('petty_tx').delete().eq('id', id), ()=> lremove('petty_tx', id)); }
+    else { await safeQuery(()=> sb.from('petty_tx').update({ amount: toNumber(v) }).eq('id', id), ()=> lupdate('petty_tx', id, { amount: toNumber(v) })); }
+  }
   await renderPetty();
 }
 async function openNoteEdit(id){
-  const { data } = await sb.from('notes').select('*').eq('id', id).maybeSingle();
-  if(!data) return;
-  const v = prompt(`עדכון כותרת (ריק למחיקה):`, data.title||'');
-  if(v===null) return;
-  if(v===''){ await sb.from('notes').delete().eq('id', id); }
-  else{ await sb.from('notes').update({ title: v }).eq('id', id); }
+  if (OFFLINE){
+    const n = lfind('notes', x=>x.id===id); if(!n) return;
+    const v = prompt(`עדכון כותרת (ריק למחיקה):`, n.title||'');
+    if(v===null) return;
+    if(v==='') lremove('notes', id); else lupdate('notes', id, { title: v });
+  } else {
+    const { data } = await safeQuery(()=> sb.from('notes').select('*').eq('id', id).maybeSingle(), ()=> lfind('notes', x=>x.id===id) );
+    if(!data) return;
+    const v = prompt(`עדכון כותרת (ריק למחיקה):`, data.title||'');
+    if(v===null) return;
+    if(v===''){ await safeQuery(()=> sb.from('notes').delete().eq('id', id), ()=> lremove('notes', id)); }
+    else { await safeQuery(()=> sb.from('notes').update({ title: v }).eq('id', id), ()=> lupdate('notes', id, { title: v })); }
+  }
   await renderNotes();
 }
 
-/* ========= TABS & NAV ========= */
+/* ========= NAV / TABS ========= */
 function switchMainTab(view){
   document.querySelectorAll('[data-view-panel]').forEach(el=> el.classList.add('hidden'));
   document.getElementById(`view-${view}`)?.classList.remove('hidden');
 
   document.querySelectorAll('#mainTabs [data-view]').forEach(b=>{
-    b.classList.toggle('on', b.dataset.view===view);
-    b.setAttribute('aria-selected', b.dataset.view===view ? 'true' : 'false');
+    const on = b.dataset.view===view;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-selected', on ? 'true' : 'false');
   });
 
-  // סאב-טאבים בכל תת-מסך
   if(view==='expenses') switchSub('exp-var');
   if(view==='savings')  switchSub('sav-pension');
 }
-
 function switchSub(key){
   document.querySelectorAll('[data-subpanel]').forEach(el=> el.classList.add('hidden'));
   document.getElementById(key)?.classList.remove('hidden');
-
   document.querySelectorAll('[data-subview]').forEach(b=>{
     const on = b.dataset.subview===key;
     b.classList.toggle('on', on);
@@ -1396,24 +1521,21 @@ function switchSub(key){
   });
 }
 
+bindTap(document.getElementById('navHome'), ()=> switchMainTab('home'));
+bindTap(document.getElementById('navPetty'), ()=>{
+  document.querySelectorAll('[data-view-panel]').forEach(el=> el.classList.add('hidden'));
+  document.getElementById('view-petty')?.classList.remove('hidden');
+});
+bindTap(document.getElementById('navNotes'), ()=>{
+  document.querySelectorAll('[data-view-panel]').forEach(el=> el.classList.add('hidden'));
+  document.getElementById('view-notes')?.classList.remove('hidden');
+});
+
 document.querySelectorAll('#mainTabs [data-view]')?.forEach(b=>{
   b.addEventListener('click', ()=> switchMainTab(b.dataset.view));
 });
 document.querySelectorAll('[data-subview]')?.forEach(b=>{
   b.addEventListener('click', ()=> switchSub(b.dataset.subview));
-});
-
-// כפתורי ניווט תחתונים
-document.getElementById('navHome')?.addEventListener('click', ()=>{
-  switchMainTab('home');
-});
-document.getElementById('navPetty')?.addEventListener('click', ()=>{
-  document.querySelectorAll('[data-view-panel]').forEach(el=> el.classList.add('hidden'));
-  document.getElementById('view-petty')?.classList.remove('hidden');
-});
-document.getElementById('navNotes')?.addEventListener('click', ()=>{
-  document.querySelectorAll('[data-view-panel]').forEach(el=> el.classList.add('hidden'));
-  document.getElementById('view-notes')?.classList.remove('hidden');
 });
 
 /* ========= FILTER HOOKS ========= */
@@ -1456,7 +1578,13 @@ async function renderAll(){
 
 /* ========= BOOT ========= */
 document.addEventListener('DOMContentLoaded', ()=>{
+  // טאצ' נעים גם על ה-FAB
+  bindTap(document.getElementById('fabAddExpense'), ()=> { switchMainTab('expenses'); switchSub('exp-var'); });
+  bindTap(document.getElementById('fabAddIncome'),  ()=> { document.getElementById('formIncomeInline')?.classList.remove('hidden'); });
+  bindTap(document.getElementById('fabAddNote'),    ()=> { switchMainTab('home'); document.getElementById('view-notes')?.classList.remove('hidden'); });
+
   initAuth();
 });
 </script>
-</body> </html>
+</body>
+</html>
