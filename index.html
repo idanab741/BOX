@@ -19,7 +19,8 @@
   <script>
     const SUPABASE_URL  = 'https://zxzopuruaccfjfhrjxqg.supabase.co';
     const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp4em9wdXJ1YWNjZmpmaHJqeHFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUzMzgwMTUsImV4cCI6MjA3MDkxNDAxNX0.Fk80JHLEFe4W1UDGRABnxRqI1roDOv2dNGOLKqmRV5k';
- const HOUSEHOLD_ID  = 'עידן וליטל';
+const HH_KEY = 'smartwallet_household';
+let HOUSEHOLD_ID = localStorage.getItem(HH_KEY) || 'עידן וליטל';
   </script>
 
   <style>
@@ -528,37 +529,68 @@
     ensureMonth(ROOT.current); saveRoot();
 
     /* ========= CLOUD SYNC ========= */
-    async function loadRootFromCloud() {
-      try {
-        const { data, error } = await sb.from('wallet').select('data').eq('household', HOUSEHOLD_ID).maybeSingle();
-        if (error) { console.warn('[cloud] load error:', error); return null; }
-        return data?.data || null;
-      } catch (e) { console.warn('[cloud] load exception:', e); return null; }
-    }
-    let __cloudSaveTimer = null;
-    async function saveRootToCloudNow() {
-      try { await sb.from('wallet').upsert({ household: HOUSEHOLD_ID, data: ROOT }); }
-      catch (e) { console.warn('[cloud] save exception:', e); }
-    }
-    function saveRootToCloud() {
-      if (__cloudSaveTimer) clearTimeout(__cloudSaveTimer);
-      __cloudSaveTimer = setTimeout(saveRootToCloudNow, 300);
-    }
-    const __origSaveRoot = saveRoot;
-    saveRoot = function () { __origSaveRoot(); saveRootToCloud(); };
+   async function loadLatestRootFromCloud() {
+  try {
+    const { data, error } = await sb
+      .from('wallet')
+      .select('household, data, updated_at')
+      .order('updated_at', { ascending: false })
+      .limit(1);
 
-    (async function initCloudSync(){
-      const cloud = await loadRootFromCloud();
-      if (cloud && typeof cloud === 'object' && Object.keys(cloud).length) {
-        ROOT = cloud;
-        if(!ROOT.months) ROOT.months = {};
-        if(!ROOT.current) ROOT.current = '2025-08';
-        if(!ROOT.petty) ROOT.petty = { budgetCap:0, transactions:[] };
-        if(!ROOT.notes) ROOT.notes = [];
-        ensureMonth(ROOT.current);
-        try { renderAll && renderAll(); } catch {}
-      } else {
-        await saveRootToCloudNow();
+    if (error) { console.warn('[cloud] load error:', error); return null; }
+    return (data && data[0]) ? data[0] : null;
+  } catch (e) {
+    console.warn('[cloud] load exception:', e);
+    return null;
+  }
+}
+
+async function initCloudSync(){
+  const latest = await loadLatestRootFromCloud();
+
+  // האם לענן יש דאטה אמיתי (לא אובייקט ריק)?
+  const cloudHasData = !!(latest && latest.data && Object.keys(latest.data.months || {}).length);
+
+  if (cloudHasData) {
+    HOUSEHOLD_ID = latest.household;
+    localStorage.setItem(HH_KEY, HOUSEHOLD_ID);
+    ROOT = latest.data;
+  } else {
+    // אין דאטה בענן / חסום → לא דורסים את המקומי!
+    // אם המקומי ריק לגמרי, נתחיל ברירות מחדל
+    if(!ROOT || typeof ROOT !== 'object') ROOT = {};
+    if(!ROOT.months)  ROOT.months = {};
+    if(!ROOT.current) ROOT.current = '2025-08';
+    if(!ROOT.petty)   ROOT.petty  = { budgetCap:0, transactions:[] };
+    if(!ROOT.notes)   ROOT.notes  = [];
+    ensureMonth(ROOT.current);
+
+    // ונשמור לענן תחת ה-HOUSEHOLD הנוכחי כדי לאתחל שם דאטה
+    try { await sb.from('wallet').upsert({ household: HOUSEHOLD_ID, data: ROOT }); } catch {}
+  }
+
+  // הגנות בסיס
+  if(!ROOT.months)  ROOT.months = {};
+  if(!ROOT.current) ROOT.current = '2025-08';
+  if(!ROOT.petty)   ROOT.petty  = { budgetCap:0, transactions:[] };
+  if(!ROOT.notes)   ROOT.notes  = [];
+  ensureMonth(ROOT.current);
+}
+
+async function saveRootToCloudNow() {
+  try {
+    await sb.from('wallet').upsert({ household: HOUSEHOLD_ID, data: ROOT });
+  } catch (e) { console.warn('[cloud] save exception:', e); }
+}
+// דחיית שמירה קטנה כדי לא להציף את הענן
+let __cloudSaveTimer = null;
+function saveRootToCloud() {
+  if (__cloudSaveTimer) clearTimeout(__cloudSaveTimer);
+  __cloudSaveTimer = setTimeout(saveRootToCloudNow, 300);
+}
+const __origSaveRoot = saveRoot;
+saveRoot = function () { __origSaveRoot(); saveRootToCloud(); };
+
       }
     })();
 
@@ -1425,5 +1457,6 @@
   </script>
 </body>
 </html>
+
 
 
