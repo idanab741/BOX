@@ -611,67 +611,146 @@ const SB_TABLE_FALLBACK  = null;
     }
     function S(){ return ROOT.months[ROOT.current]; }
 
-    /* ========= CLOUD SYNC – ALWAYS-CLOUD-FIRST ========= */
-    async function loadRootFromCloudFirst(){
-      const hh = ROOT.household || (localStorage.getItem(HH_KEY) || 'default');
+   <!-- ========= CLOUD SYNC (fixed) ========= -->
+<script>
+let __cloudBootstrapped = false;
 
-      // 1) נסה v11
-      let cloud = null;
-      try{
-        const r1 = await sbSelectOne(SB_TABLE_PRIMARY, hh);
-        if(r1.ok && r1.data) cloud = r1.data;
-        else {
-          // 2) נסה טבלת legacy 'wallet'
-          const r2 = await sbSelectOne(SB_TABLE_FALLBACK, hh);
-          if(r2.ok && r2.data) cloud = r2.data;
-        }
-      } catch(e){ console.warn('[cloud] load error:', e); }
+// עדכון זמן בכל שמירה
+function markUpdated() {
+  if (!ROOT.__meta) ROOT.__meta = {};
+  ROOT.__meta.updatedAt = Date.now();
+}
 
-      // 3) אם אין בענן – נסה ייבוא מלוקאל legacy → ואז דחוף לענן
-      if(!cloud){
-        let local = loadLocalRoot();
-        if(!local || !Object.keys(local).length){
-          local = await tryLoadFromLegacyLocalIntoV11();
-        }
-        if(local && Object.keys(local).length){
-          ROOT = normalizeRoot(local);
-          setLocalHH(ROOT.household);
-          ensureMonth(ROOT.current);
-          saveLocalRoot(ROOT);
-          await sbUpsertOne(SB_TABLE_PRIMARY, ROOT.household, ROOT);
-          return true;
-        } else {
-          // התחל state חדש ושמור בענן
-          ROOT = normalizeRoot({ months:{}, current: ym(today), household: hh });
-          ensureMonth(ROOT.current);
-          saveLocalRoot(ROOT);
-          await sbUpsertOne(SB_TABLE_PRIMARY, ROOT.household, ROOT);
-          return true;
-        }
-      }
+// עטיפת שמירה מקומית + מניעת שמירת ענן לפני bootstrapping
+const __origSaveRootLocal = saveRoot;
+async function saveRootToCloudNow() {
+  try {
+    await sb.from('wallet').upsert({ household: HOUSEHOLD_ID, data: ROOT });
+  } catch (e) {
+    console.warn('[cloud] save exception:', e);
+  }
+}
+let __cloudSaveTimer = null;
+function saveRootToCloud() {
+  if (!__cloudBootstrapped) return; // אל תשמור לענן לפני שסיימנו למשוך
+  if (__cloudSaveTimer) clearTimeout(__cloudSaveTimer);
+  __cloudSaveTimer = setTimeout(saveRootToCloudNow, 300);
+}
 
-      // 4) יש בענן – מזג עם לוקאל (ליתר ביטחון), והפוך את הענן לשכבת אמת
-      const localNow = loadLocalRoot();
-      ROOT = deepMergeLocalOverCloud(cloud, localNow);
-      setLocalHH(ROOT.household);
+// החלפת saveRoot כך שתמיד תעדכן updatedAt, תשמור מקומית ורק אח"כ לענן
+saveRoot = function () {
+  markUpdated();
+  __origSaveRootLocal();
+  saveRootToCloud();
+};
+
+// קריאה עננית
+async function loadRootFromCloud() {
+  try {
+    const { data, error } = await sb
+      .from('wallet')
+      .select('data')
+      .eq('household', HOUSEHOLD_ID)
+      .maybeSingle();
+    if (error) {
+      console.warn('[cloud] load error:', error);
+      return null;
+    }
+    return data?.data || null;
+  } catch (e) {
+    console.warn('[cloud] load exception:', e);
+    return null;
+  }
+}
+
+// מיזוג חכם: נותן עדיפות לנתון ה"חדש" לפי updatedAt, וממלא שדות חסרים
+function deepMerge(target, source) {
+  if (source == null || typeof source !== 'object') return target;
+  const out = Array.isArray(target) ? target.slice() : { ...target };
+  for (const k of Object.keys(source)) {
+    const sv = source[k];
+    const tv = out[k];
+    if (Array.isArray(sv)) {
+      out[k] = Array.isArray(tv) ? tv.slice() : [];
+      // העדפה פשוטה: אם יש מערך מהענן והוא לא ריק – קח אותו, אחרת השאר מקומי
+      out[k] = sv.length ? sv.slice() : (tv || []);
+    } else if (sv && typeof sv === 'object') {
+      out[k] = deepMerge(tv && typeof tv === 'object' ? tv : {}, sv);
+    } else {
+      out[k] = sv;
+    }
+  }
+  return out;
+}
+
+// אתחול סנכרון – לא דורס נתונים טובים עם ריקים!
+(async function initCloudSync() {
+  try {
+    const cloud = await loadRootFromCloud();
+
+    const localUpdated = ROOT?.__meta?.updatedAt || 0;
+    const cloudUpdated = cloud?.__meta?.updatedAt || 0;
+
+    // אם בענן אין כלום או שהוא אובייקט ריק ממש, פשוט דחוף את המקומי לענן
+    const cloudIsEmpty =
+      !cloud ||
+      (typeof cloud === 'object' && Object.keys(cloud).length === 0);
+
+    if (cloudIsEmpty) {
+      // ודא שהלוקאל מלא תקין
       ensureMonth(ROOT.current);
-      saveLocalRoot(ROOT);
-      // דחיפה חזרה לענן (מתקדמת), כדי לכלול חודשי-עבר מלוקאל אם היו:
-      await sbUpsertOne(SB_TABLE_PRIMARY, ROOT.household, ROOT);
-      return true;
+      markUpdated();
+      await saveRootToCloudNow();
+      __cloudBootstrapped = true;
+      renderAll?.();
+      return;
     }
 
-    async function saveRootToCloudNow(){
-      try{
-        saveLocalRoot(ROOT);
-        await sbUpsertOne(SB_TABLE_PRIMARY, ROOT.household, ROOT);
-      }catch(e){ console.warn('[cloud] save exception:', e); }
+    // אם לשנינו יש נתונים: מי חדש יותר?
+    let winner = 'local';
+    if (cloudUpdated > localUpdated) winner = 'cloud';
+
+    if (winner === 'cloud') {
+      // מיזוג: שמור על מפתחות חסרים שהיו לוקאלית
+      const merged = deepMerge(
+        {
+          months: {},
+          petty: { budgetCap: 0, transactions: [] },
+          notes: [],
+          current: ROOT.current || '2025-08',
+          __meta: { updatedAt: Date.now() },
+        },
+        cloud
+      );
+      ROOT = merged;
+      // הגנות בסיס
+      if (!ROOT.months) ROOT.months = {};
+      if (!ROOT.current) ROOT.current = '2025-08';
+      if (!ROOT.petty) ROOT.petty = { budgetCap: 0, transactions: [] };
+      if (!ROOT.notes) ROOT.notes = [];
+      ensureMonth(ROOT.current);
+      __origSaveRootLocal(); // כתיבה ללוקאל כדי לייצב
+    } else {
+      // הלוקאל מנצח → נעלה לענן (אחרי שנבטיח מבנה מלא)
+      if (!ROOT.months) ROOT.months = {};
+      if (!ROOT.current) ROOT.current = '2025-08';
+      if (!ROOT.petty) ROOT.petty = { budgetCap: 0, transactions: [] };
+      if (!ROOT.notes) ROOT.notes = [];
+      ensureMonth(ROOT.current);
+      markUpdated();
+      await saveRootToCloudNow();
     }
-    function saveRoot(){
-      saveLocalRoot(ROOT);
-      if(__cloudSaveTimer) clearTimeout(__cloudSaveTimer);
-      __cloudSaveTimer = setTimeout(saveRootToCloudNow, 300);
-    }
+
+    __cloudBootstrapped = true;
+    renderAll?.();
+  } catch (e) {
+    console.warn('[cloud] bootstrap exception:', e);
+    // במקרה של שגיאה – לפחות תציג לוקאל ולא תדרוס אותו
+    __cloudBootstrapped = true;
+    renderAll?.();
+  }
+})();
+</script>
 
     /* ========= HELPERS FOR UI ========= */
     function monthLabel(key){ const d=new Date(key+'-01'); return d.toLocaleDateString('he-IL',{month:'long',year:'numeric'}); }
@@ -1469,5 +1548,6 @@ const SB_TABLE_FALLBACK  = null;
   </script>
 </body>
 </html>
+
 
 
