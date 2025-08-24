@@ -473,8 +473,8 @@
     /* ========= CONSTANTS ========= */
     const ROOT_KEY = 'smartwallet_v11_root';
     const HH_KEY   = 'smartwallet_v11_household';
-    const SB_TABLE_PRIMARY   = 'wallet'; // מקור אמת חדש
-    const SB_TABLE_FALLBACK  = 'wallet';     // נפילה לאחור אם יש טבלה ישנה
+  const SB_TABLE_PRIMARY   = 'wallet';
+const SB_TABLE_FALLBACK  = null;
 
     /* ========= UTIL ========= */
     const ILS = new Intl.NumberFormat('he-IL',{ style:'currency', currency:'ILS', minimumFractionDigits:2, maximumFractionDigits:2 });
@@ -1469,4 +1469,5 @@
   </script>
 </body>
 </html>
+
 
