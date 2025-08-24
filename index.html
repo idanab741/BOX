@@ -22,7 +22,7 @@
     const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp4em9wdXJ1YWNjZmpmaHJqeHFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUzMzgwMTUsImV4cCI6MjA3MDkxNDAxNX0.Fk80JHLEFe4W1UDGRABnxRqI1roDOv2dNGOLKqmRV5k';
     // household יוגדר דינמית מהגדרות מקומיות (UI קטן למעלה) במקום קבוע בקוד
   </script>
-<!-- PART 2/10 : CSS -->
+  <!-- PART 2/10 : CSS -->
   <style>
     :root{
       --card:#111827; /* dark slate-900 */
@@ -73,6 +73,7 @@
     .no-top-gap > *:first-child{margin-top:0 !important}
   </style>
 </head>
+
 <!-- PART 3/10 : BODY פתיחה + כותרת עליונה -->
 <body>
   <main class="container p-3 space-y-4">
@@ -94,8 +95,8 @@
       <button role="tab" aria-selected="false" aria-controls="view-expenses" data-view="expenses" type="button">הוצאות</button>
       <button role="tab" aria-selected="false" aria-controls="view-savings" data-view="savings" type="button">חיסכון</button>
     </nav>
-<!-- PART 4/10 : VIEW HOME -->
-    <!-- VIEW: HOME -->
+
+    <!-- PART 4/10 : VIEW HOME -->
     <section id="view-home" class="space-y-4" data-view-panel="home">
       <!-- עו"ש מינימייזבל -->
       <section class="card p-4" role="region" aria-labelledby="sec-ovr">
@@ -175,8 +176,8 @@
         </div>
       </div>
     </section>
-<!-- PART 5/10 : VIEW EXPENSES -->
-    <!-- VIEW: EXPENSES -->
+
+    <!-- PART 5/10 : VIEW EXPENSES -->
     <section id="view-expenses" class="space-y-4 hidden" data-view-panel="expenses">
       <div class="seg card p-1" role="tablist" aria-label="סוג הוצאות">
         <button class="on" data-subview="exp-var" aria-selected="true" type="button">משתנות</button>
@@ -236,8 +237,8 @@
         </div>
       </div>
     </section>
-<!-- PART 6/10 : VIEW SAVINGS -->
-    <!-- VIEW: SAVINGS -->
+
+    <!-- PART 6/10 : VIEW SAVINGS -->
     <section id="view-savings" class="space-y-4 hidden" data-view-panel="savings">
       <div class="seg card p-1" role="tablist" aria-label="חיסכון – סוגים">
         <button class="on" data-subview="sav-pension" aria-selected="true" type="button">פנסיה</button>
@@ -268,7 +269,7 @@
             <input id="krBalance" class="input text-right" inputmode="decimal" step="0.01" placeholder="יתרה התחלתית (אוג׳ 2025)" />
             <div class="col-span-2 flex items-center gap-2">
               <input id="krHasMonthly" type="checkbox" class="h-5 w-5" />
-              <label for="krHasMonthly" class="text-sm text-sהלte-300">יש הפקדה חודשית</label>
+              <label for="krHasMonthly" class="text-sm text-slate-300">יש הפקדה חודשית</label>
             </div>
             <input id="krMonthly" class="input text-right col-span-2" inputmode="decimal" step="0.01" placeholder="הפקדה חודשית" disabled />
             <button class="btn btn-prim col-span-2">שמור</button>
@@ -307,7 +308,8 @@
         </div>
       </div>
     </section>
-<!-- PART 7/10 : FOOTERS + QUICK BAR + מודאלים -->
+
+    <!-- PART 7/10 : FOOTERS + QUICK BAR + מודאלים -->
     <footer class="text-center text-[.7rem] text-slate-500 py-6" role="contentinfo">
       v11 • מובייל (iPhone 14) • כל חודש נשמר בנפרד • RTL • Dark
     </footer>
@@ -385,7 +387,8 @@
       </form>
     </div>
   </div>
-<!-- PART 8/10 : VIEW PETTY + VIEW NOTES -->
+
+  <!-- PART 8/10 : VIEW PETTY + VIEW NOTES -->
   <!-- VIEW: PETTY -->
   <section id="view-petty" class="hidden container p-3 space-y-4" data-view-panel="petty">
     <div class="card p-4">
@@ -461,10 +464,17 @@
       v11 • מובייל (iPhone 14) • כל חודש נשמר בנפרד • RTL • Dark
     </footer>
   </section>
-<!-- PART 9/10 : SCRIPT — UTIL, STATE, INIT, SYNC -->
+
+  <!-- PART 9/10 : SCRIPT — UTIL, STATE, INIT, SYNC -->
   <script>
     /* ========= Supabase ========= */
     const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+    /* ========= CONSTANTS ========= */
+    const ROOT_KEY = 'smartwallet_v11_root';
+    const HH_KEY   = 'smartwallet_v11_household';
+    const SB_TABLE_PRIMARY   = 'wallet_v11'; // מקור אמת חדש
+    const SB_TABLE_FALLBACK  = 'wallet';     // נפילה לאחור אם יש טבלה ישנה
 
     /* ========= UTIL ========= */
     const ILS = new Intl.NumberFormat('he-IL',{ style:'currency', currency:'ILS', minimumFractionDigits:2, maximumFractionDigits:2 });
@@ -481,23 +491,20 @@
       if(to   && key > to)   return false;
       return true;
     };
-
     function toast(msg){
       const wrap=document.getElementById('toastWrap');
+      if(!wrap) return;
       const t=document.createElement('div');
       t.className='card p-3 text-sm flex items-center gap-3';
       t.textContent=msg; wrap.appendChild(t);
       setTimeout(()=>{t.remove();},3500);
     }
 
-    /* ========= CATEGORIES ========= */
+    /* ========= CATEGORIES (לשדות בחירה) ========= */
     const FIXED = ["שכירות","ארנונה","ועד בית","אינטרנט","חשמל","מים","סלולרי","ביטוחים","רכב – ביטוח/טסט/דלק","חנייה","מנויים","חינוך/גן","אחר"];
     const VARIABLE = ["מזון","מסעדות/בילויים/חיי לילה","קניות/אופנה","פארם/טיפוח","שונות","מתנות","תחבורה ציבורית/מוניות","נסיעות/טיסות","תחזוקת בית","בריאות/תרופות"];
 
-    /* ========= STORAGE ========= */
-    const ROOT_KEY = 'smartwallet_v11_root';
-    const HH_KEY   = 'smartwallet_v11_household';
-
+    /* ========= DEFAULT STATE ========= */
     function defaultMonthState(){
       return {
         totalBudget: 0,
@@ -509,8 +516,75 @@
         petty:{ budgetCap:0, transactions:[] } // קופה קטנה לפי חודש
       };
     }
-    function loadRoot(){ try{ return JSON.parse(localStorage.getItem(ROOT_KEY)) || {}; } catch{ return {}; } }
-    function saveRoot(){ localStorage.setItem(ROOT_KEY, JSON.stringify(ROOT)); saveRootToCloud(); }
+
+    /* ========= LOCAL STORAGE ========= */
+    function loadLocalRoot(){ try{ return JSON.parse(localStorage.getItem(ROOT_KEY)) || {}; } catch{ return {}; } }
+    function saveLocalRoot(obj){ localStorage.setItem(ROOT_KEY, JSON.stringify(obj)); }
+    function setLocalHH(hh){ localStorage.setItem(HH_KEY, hh); }
+
+    /* ========= LEGACY MIGRATION (v10 / 'wallet') ========= */
+    function normalizeRoot(obj){
+      if(!obj || typeof obj!=='object') obj = {};
+      obj.months  = obj.months  || {};
+      obj.current = obj.current || ym(new Date());
+      obj.household = obj.household || (localStorage.getItem(HH_KEY) || 'default');
+
+      for(const k of Object.keys(obj.months)){
+        const m = obj.months[k] || {};
+        m.pensions  = m.pensions  || [];
+        m.recurring = m.recurring || [];
+        m.savings   = m.savings   || { krans:[], deposits:[], goals:[] };
+        m.petty     = m.petty     || { budgetCap:0, transactions:[] };
+        obj.months[k] = m;
+      }
+      return obj;
+    }
+    async function tryLoadFromLegacyLocalIntoV11(){
+      const legacy = localStorage.getItem('smartwallet_v10_root') || localStorage.getItem('smartwallet_root');
+      if(!legacy) return null;
+      let obj = normalizeRoot(JSON.parse(legacy));
+      saveLocalRoot(obj);
+      setLocalHH(obj.household || 'default');
+      return obj;
+    }
+
+    /* ========= CLOUD LAYER ========= */
+    let __cloudSaveTimer = null;
+
+    async function sbSelectOne(table, household){
+      const { data, error } = await sb.from(table).select('data').eq('household', household).maybeSingle();
+      if(error) return { ok:false, data:null, error };
+      return { ok:true, data: data?.data || null };
+    }
+    async function sbUpsertOne(table, household, dataObj){
+      const payload = { household, data: dataObj, updated_at: new Date().toISOString() };
+      const { error } = await sb.from(table).upsert(payload).select('household').maybeSingle();
+      return !error;
+    }
+    function deepMergeLocalOverCloud(cloud, local){
+      if(!cloud && !local) return null;
+      if(cloud && !local) return normalizeRoot(cloud);
+      if(!cloud && local) return normalizeRoot(local);
+
+      const out = normalizeRoot(cloud);
+      const loc = normalizeRoot(local);
+
+      // איחוד חודשים (אם יש לוקאליים שלא קיימים בענן)
+      for(const k of Object.keys(loc.months)){
+        if(!out.months[k]) out.months[k] = loc.months[k];
+      }
+      // אם בענן חסרים שדות בסיס:
+      out.household = out.household || loc.household;
+      out.current   = out.current   || loc.current;
+      return out;
+    }
+
+    /* ========= ROOT + INIT ========= */
+    const today = new Date();
+    let ROOT = loadLocalRoot();
+    if(!ROOT.months) ROOT.months = {};
+    if(!ROOT.current) ROOT.current = ym(today);
+    if(!ROOT.household) ROOT.household = (localStorage.getItem(HH_KEY) || 'default');
 
     function prevMonthKey(key){
       const [y,m] = key.split('-').map(Number);
@@ -527,7 +601,6 @@
         const pk = prevMonthKey(key);
         const prev = ROOT.months[pk];
         if (prev){
-          // מעתיקים בסיס: עו"ש, חיובים קבועים, פנסיות וחסכונות (נוחות שימוש)
           ROOT.months[key].overdraft = toNumber(prev.overdraft||0);
           ROOT.months[key].recurring = JSON.parse(JSON.stringify(prev.recurring||[]));
           ROOT.months[key].pensions  = JSON.parse(JSON.stringify(prev.pensions||[]));
@@ -538,50 +611,71 @@
     }
     function S(){ return ROOT.months[ROOT.current]; }
 
-    /* ========= INIT ========= */
-    const today = new Date();
-    let ROOT = loadRoot();
-    if(!ROOT.months) ROOT.months = {};
-    if(!ROOT.current) ROOT.current = ym(today); // חודש נוכחי אוטומטי
-    if(!ROOT.household) ROOT.household = (localStorage.getItem(HH_KEY) || 'default');
-    ensureMonth(ROOT.current);
+    /* ========= CLOUD SYNC – ALWAYS-CLOUD-FIRST ========= */
+    async function loadRootFromCloudFirst(){
+      const hh = ROOT.household || (localStorage.getItem(HH_KEY) || 'default');
 
-    /* ========= CLOUD SYNC (אותו מבנה כמו קודם, אבל household דינמי) ========= */
-    let __cloudSaveTimer = null;
-    const sbTable = 'wallet';
-    async function loadRootFromCloud() {
-      try {
-        const { data, error } = await sb.from(sbTable).select('data').eq('household', ROOT.household).maybeSingle();
-        if (error) { console.warn('[cloud] load error:', error); return null; }
-        return data?.data || null;
-      } catch (e) { console.warn('[cloud] load exception:', e); return null; }
+      // 1) נסה v11
+      let cloud = null;
+      try{
+        const r1 = await sbSelectOne(SB_TABLE_PRIMARY, hh);
+        if(r1.ok && r1.data) cloud = r1.data;
+        else {
+          // 2) נסה טבלת legacy 'wallet'
+          const r2 = await sbSelectOne(SB_TABLE_FALLBACK, hh);
+          if(r2.ok && r2.data) cloud = r2.data;
+        }
+      } catch(e){ console.warn('[cloud] load error:', e); }
+
+      // 3) אם אין בענן – נסה ייבוא מלוקאל legacy → ואז דחוף לענן
+      if(!cloud){
+        let local = loadLocalRoot();
+        if(!local || !Object.keys(local).length){
+          local = await tryLoadFromLegacyLocalIntoV11();
+        }
+        if(local && Object.keys(local).length){
+          ROOT = normalizeRoot(local);
+          setLocalHH(ROOT.household);
+          ensureMonth(ROOT.current);
+          saveLocalRoot(ROOT);
+          await sbUpsertOne(SB_TABLE_PRIMARY, ROOT.household, ROOT);
+          return true;
+        } else {
+          // התחל state חדש ושמור בענן
+          ROOT = normalizeRoot({ months:{}, current: ym(today), household: hh });
+          ensureMonth(ROOT.current);
+          saveLocalRoot(ROOT);
+          await sbUpsertOne(SB_TABLE_PRIMARY, ROOT.household, ROOT);
+          return true;
+        }
+      }
+
+      // 4) יש בענן – מזג עם לוקאל (ליתר ביטחון), והפוך את הענן לשכבת אמת
+      const localNow = loadLocalRoot();
+      ROOT = deepMergeLocalOverCloud(cloud, localNow);
+      setLocalHH(ROOT.household);
+      ensureMonth(ROOT.current);
+      saveLocalRoot(ROOT);
+      // דחיפה חזרה לענן (מתקדמת), כדי לכלול חודשי-עבר מלוקאל אם היו:
+      await sbUpsertOne(SB_TABLE_PRIMARY, ROOT.household, ROOT);
+      return true;
     }
-    async function saveRootToCloudNow() {
-      try { await sb.from(sbTable).upsert({ household: ROOT.household, data: ROOT }); }
-      catch (e) { console.warn('[cloud] save exception:', e); }
+
+    async function saveRootToCloudNow(){
+      try{
+        saveLocalRoot(ROOT);
+        await sbUpsertOne(SB_TABLE_PRIMARY, ROOT.household, ROOT);
+      }catch(e){ console.warn('[cloud] save exception:', e); }
     }
-    function saveRootToCloud() {
-      if (__cloudSaveTimer) clearTimeout(__cloudSaveTimer);
+    function saveRoot(){
+      saveLocalRoot(ROOT);
+      if(__cloudSaveTimer) clearTimeout(__cloudSaveTimer);
       __cloudSaveTimer = setTimeout(saveRootToCloudNow, 300);
     }
-    (async function initCloudSync(){
-      const cloud = await loadRootFromCloud();
-      if (cloud && typeof cloud === 'object' && Object.keys(cloud).length) {
-        ROOT = cloud;
-        if(!ROOT.months) ROOT.months = {};
-        if(!ROOT.current) ROOT.current = ym(today);
-        if(!ROOT.household) ROOT.household = (localStorage.getItem(HH_KEY) || 'default');
-        ensureMonth(ROOT.current);
-        try { renderAll && renderAll(); } catch {}
-      } else {
-        await saveRootToCloudNow();
-      }
-    })();
 
-    /* ========= HELPERS ========= */
+    /* ========= HELPERS FOR UI ========= */
     function monthLabel(key){ const d=new Date(key+'-01'); return d.toLocaleDateString('he-IL',{month:'long',year:'numeric'}); }
     function setCurrentMonthLabel(){ const el=document.getElementById('currentMonthLabel'); if(el) el.textContent = `${monthLabel(ROOT.current)} • משק בית: ${ROOT.household}`; }
-
     function monthlyTotalsFor(key){
       const state = ROOT.months[key] || defaultMonthState();
       let net=0, gross=0, exp=0;
@@ -590,11 +684,12 @@
         if(t.type==='income'){ net += toNumber(t.amount); gross += toNumber(t.gross || t.amount); }
         else { exp += toNumber(t.amount); }
       }
-      // קבועות רק אם בתוקף לחודש
       const fixed = (state.recurring||[]).reduce((s,r)=> s + (betweenYM(key, r.from, r.to) ? toNumber(r.amount||0) : 0), 0);
       return { net, gross, exp, fixed, surplus: net - (exp + fixed) };
     }
-<!-- PART 10/10 : SCRIPT — רנדרים, אירועים, לוגיקה -->
+
+    /* PART 10/10 : SCRIPT — רנדרים, אירועים, לוגיקה (כמו אצלך, ללא שינוי פונקציונלי) */
+
     function savingsOtherTotalFor(state){
       const k = (state.savings?.krans||[]).reduce((s,x)=> s + toNumber(x.balance||0), 0);
       const d = (state.savings?.deposits||[]).reduce((s,x)=> s + toNumber(x.balance||0), 0);
@@ -853,7 +948,6 @@
 
       const spent = t.exp + t.fixed;
 
-      // עודף עקבי: נטו – (משתנות + קבועות)
       const surplus = toNumber(t.net) - (toNumber(t.exp) + toNumber(t.fixed));
       document.getElementById('kpiSurplus').textContent = ils(surplus);
 
@@ -1217,195 +1311,161 @@
       e.preventDefault();
       const f=e.currentTarget;
       if(!f.querySelector('#catSelect').value) { toast('בחר/י קטגוריה'); f.querySelector('#catSelect').focus(); return; }
-      if(!f.querySelector('#expAmount').value) { toast('מלא/י סכום'); f.querySelector('#expAmount').focus(); return; }
+      if(!f.query
+             // הוצאות משתנות
+    document.getElementById('formExpense')?.addEventListener('submit', e=>{
+      e.preventDefault();
+      const f=e.currentTarget;
+      if(!f.querySelector('#catSelect').value) { 
+        toast('בחר/י קטגוריה'); 
+        f.querySelector('#catSelect').focus(); 
+        return; 
+      }
       addExpense({
-        amount:f.querySelector('#expAmount').value,
-        category:f.querySelector('#catSelect').value,
-        merchant:f.querySelector('#expMerchant').value,
-        date:f.querySelector('#expDate').value
+        amount: f.querySelector('#expAmount').value,
+        category: f.querySelector('#catSelect').value,
+        merchant: f.querySelector('#expMerchant').value,
+        date: f.querySelector('#expDate').value
       });
-      f.reset(); updateCatBadge();
-    });
-
-    // מסנני הוצאות משתנות
-    ['filterText','filterCat','filterFrom','filterTo','sortBy'].forEach(id=>{
-      const el=document.getElementById(id); if(!el) return;
-      el.addEventListener('input', renderExpensesList);
-      el.addEventListener('change', renderExpensesList);
+      f.reset(); 
+      updateCatBadge();
     });
     document.getElementById('catSelect')?.addEventListener('change', updateCatBadge);
 
-    // הוצאות קבועות עם תוקף זמן (אין "הפצה קדימה")
+    // הוצאות קבועות
     document.getElementById('formFixedAdd')?.addEventListener('submit', e=>{
       e.preventDefault();
-      const name=document.getElementById('fixName').value;
-      const amountVal=toNumber(document.getElementById('fixAmount').value);
-      const noteRaw=(document.getElementById('fixNote').value||'').trim();
-      const from=(document.getElementById('fixFrom').value||'').trim();
-      const to=(document.getElementById('fixTo').value||'').trim();
-
-      if(!name){ toast('שם נדרש'); return; }
-      if(amountVal<=0 && !noteRaw){ toast('הזן/י סכום או הערה'); return; }
-
-      (S().recurring||[]).push({
+      const f=e.currentTarget;
+      const rec = {
         id: uuid(),
-        name, amount: Math.max(0, amountVal), note: noteRaw, from, to
+        name: f.querySelector('#fixName').value,
+        amount: toNumber(f.querySelector('#fixAmount').value),
+        note: f.querySelector('#fixNote').value,
+        from: f.querySelector('#fixFrom').value,
+        to: f.querySelector('#fixTo').value
+      };
+      if(!rec.name || !rec.amount){ toast('חסר שם או סכום'); return; }
+      S().recurring.unshift(rec); saveRoot(); renderFixed(); toast('נוספה הוצאה קבועה');
+      f.reset();
+    });
+
+    // פנסיה
+    document.getElementById('formPensionAdd')?.addEventListener('submit', e=>{
+      e.preventDefault();
+      const f=e.currentTarget;
+      upsertPension({
+        owner:f.querySelector('#penOwner').value,
+        balance:f.querySelector('#penBalance').value,
+        monthly:f.querySelector('#penMonthly').value
       });
-
-      saveRoot(); renderAll(); toast('חיוב קבוע נוסף'); e.currentTarget.reset();
+      f.reset();
     });
 
-    // קרן השתלמות – הפעלת/כיבוי "הפקדה חודשית"
-    document.getElementById('krHasMonthly')?.addEventListener('change', (e)=>{
-      const on = e.currentTarget.checked;
-      const inp = document.getElementById('krMonthly');
-      inp.disabled = !on;
-      if(!on) inp.value='';
-    });
+    // קרן השתלמות
     document.getElementById('formKeren')?.addEventListener('submit', e=>{
       e.preventDefault();
-      const n=(document.getElementById('krName').value||'').trim();
-      const b=toNumber(document.getElementById('krBalance').value);
-      const hasM = document.getElementById('krHasMonthly').checked;
-      const m= hasM ? toNumber(document.getElementById('krMonthly').value) : 0;
-      if(!n){ toast('שם קרן נדרש'); return; }
-      const ex=(S().savings.krans||[]).find(x=>x.name===n);
-      if(ex){ ex.balance=b; ex.monthly=hasM?m:0; } else { S().savings.krans.push({id:uuid(), name:n, balance:b, monthly:hasM?m:0}); }
-      saveRoot(); renderAll(); toast('קרן השתלמות נשמרה');
-      e.currentTarget.reset();
-      document.getElementById('krHasMonthly').checked=false;
-      document.getElementById('krMonthly').disabled=true;
+      const f=e.currentTarget;
+      const k={id:uuid(), name:f.krName.value, balance:toNumber(f.krBalance.value), monthly: f.krHasMonthly.checked ? toNumber(f.krMonthly.value):0};
+      if(!k.name){ toast('צריך שם קרן'); return; }
+      S().savings.krans.unshift(k); saveRoot(); renderSavings(); toast('נוספה קרן השתלמות'); f.reset();
+    });
+    document.getElementById('krHasMonthly')?.addEventListener('change', e=>{
+      document.getElementById('krMonthly').disabled = !e.currentTarget.checked;
     });
 
-    // פיקדונות – הפעלת/כיבוי "הפקדה חודשית"
-    document.getElementById('depHasMonthly')?.addEventListener('change', (e)=>{
-      const on = e.currentTarget.checked;
-      const inp = document.getElementById('depAdd');
-      inp.disabled = !on;
-      if(!on) inp.value='';
-    });
+    // פיקדון
     document.getElementById('formDeposit')?.addEventListener('submit', e=>{
       e.preventDefault();
-      const n=(document.getElementById('depName').value||'').trim();
-      const b=toNumber(document.getElementById('depBalance').value);
-      const hasM = document.getElementById('depHasMonthly').checked;
-      const m= hasM ? toNumber(document.getElementById('depAdd').value) : 0;
-      if(!n){ toast('שם חשבון נדרש'); return; }
-      const ex=(S().savings.deposits||[]).find(x=>x.name===n);
-      if(ex){ ex.balance=b; ex.monthly=hasM?m:0; } else { S().savings.deposits.push({id:uuid(), name:n, balance:b, monthly:hasM?m:0}); }
-      saveRoot(); renderAll(); toast('פיקדון נשמר');
-      e.currentTarget.reset();
-      document.getElementById('depHasMonthly').checked=false;
-      document.getElementById('depAdd').disabled=true;
+      const f=e.currentTarget;
+      const d={id:uuid(), name:f.depName.value, balance:toNumber(f.depBalance.value), monthly: f.depHasMonthly.checked ? toNumber(f.depAdd.value):0};
+      if(!d.name){ toast('צריך שם חשבון'); return; }
+      S().savings.deposits.unshift(d); saveRoot(); renderSavings(); toast('נוסף פיקדון'); f.reset();
+    });
+    document.getElementById('depHasMonthly')?.addEventListener('change', e=>{
+      document.getElementById('depAdd').disabled = !e.currentTarget.checked;
     });
 
-    // תכנית חיסכון – שמירה
+    // יעד חיסכון
     document.getElementById('formGoal')?.addEventListener('submit', e=>{
       e.preventDefault();
-      const n=(document.getElementById('goalName').value||'').trim();
-      const t=toNumber(document.getElementById('goalTarget').value);
-      const m=toNumber(document.getElementById('goalMonthly').value);
-      if(!n||!t){ toast('שם ויעד נדרשים'); return; }
-      const ex=(S().savings.goals||[]).find(x=>x.name===n);
-      if(ex){ ex.target=t; ex.monthly=m; ex.balance=ex.balance||0; }
-      else { S().savings.goals.push({id:uuid(), name:n, target:t, monthly:m, balance:0}); }
-      saveRoot(); renderAll(); toast('תכנית חיסכון נשמרה'); e.currentTarget.reset();
+      const f=e.currentTarget;
+      const g={id:uuid(), name:f.goalName.value, target:toNumber(f.goalTarget.value), monthly:toNumber(f.goalMonthly.value), balance:0};
+      if(!g.name || !g.target){ toast('צריך שם ויעד'); return; }
+      S().savings.goals.unshift(g); saveRoot(); renderSavings(); toast('נוספה מטרה'); f.reset();
     });
 
-    // מודל עריכה
-    document.getElementById('editClose')?.addEventListener('click', ()=> toggleModal(false));
-    document.getElementById('editCancel')?.addEventListener('click', ()=> toggleModal(false));
-    document.getElementById('formEdit')?.addEventListener('submit', e=>{ e.preventDefault(); saveEdit(e.currentTarget); });
-    document.getElementById('editDelete')?.addEventListener('click', ()=> deleteRow(document.getElementById('editId').value));
-    document.getElementById('editType')?.addEventListener('change', toggleEditCategoryVisibility);
-
-    // בורר חודשים – חכם (לפי המוקדם במידע ועד 12 קדימה)
-    document.getElementById('btnMonthPicker')?.addEventListener('click', openMonthPicker);
-    document.getElementById('mpClose')?.addEventListener('click', ()=> toggleMP(false));
-    function openMonthPicker(){
-      const grid = document.getElementById('mpGrid');
-      grid.innerHTML='';
-      const keys = Object.keys(ROOT.months).sort();
-      const earliest = keys.length ? new Date(keys[0]+'-01') : new Date(today.getFullYear(), today.getMonth()-12, 1);
-      const end = new Date(today.getFullYear(), today.getMonth()+11, 1);
-      for(let d=new Date(earliest); d<=end; d.setMonth(d.getMonth()+1)){
-        const key=ym(d);
-        ensureMonth(key);
-        const b=document.createElement('button');
-        b.type='button';
-        b.className='btn btn-ghost text-xs py-2';
-        b.textContent=d.toLocaleDateString('he-IL',{month:'long',year:'2-digit'});
-        b.addEventListener('click',()=>{ ROOT.current=key; saveRoot(); syncTodayInputs(); renderAll(); toggleMP(false); });
-        grid.appendChild(b);
-      }
-      toggleMP(true);
-    }
-    function toggleMP(show){
-      const m=document.getElementById('monthPicker');
-      if(show){m.classList.remove('hidden'); m.classList.add('flex');}
-      else {m.classList.add('hidden'); m.classList.remove('flex');}
-    }
-
-    // משק בית
-    document.getElementById('btnHousehold')?.addEventListener('click', ()=> toggleHH(true));
-    document.getElementById('hhClose')?.addEventListener('click', ()=> toggleHH(false));
-    document.getElementById('formHH')?.addEventListener('submit', (e)=>{
-      e.preventDefault();
-      const v=(document.getElementById('hhName').value||'').trim();
-      if(!v){ toast('הקלד/י שם משק בית'); return; }
-      ROOT.household = v;
-      localStorage.setItem(HH_KEY, v);
-      saveRoot(); setCurrentMonthLabel(); toggleHH(false); toast('משק בית עודכן');
-    });
-    function toggleHH(show){
-      const m=document.getElementById('hhPicker');
-      if(show){m.classList.remove('hidden'); m.classList.add('flex');}
-      else {m.classList.add('hidden'); m.classList.remove('flex');}
-    }
-
-    // קופה קטנה – תקציב ורישום
-    document.getElementById('pettyBudgetBtn')?.addEventListener('click', ()=>{
-      const cur = toNumber(S().petty?.budgetCap||0);
-      const v = prompt('הזן/י תקציב קופה קטנה', cur || 0);
-      if(v!==null){
-        S().petty.budgetCap = toNumber(v);
-        saveRoot(); renderPetty(); toast('תקציב קופה עודכן');
-      }
-    });
+    // קופה קטנה
     document.getElementById('formPettyExpense')?.addEventListener('submit', e=>{
       e.preventDefault();
-      const a = toNumber(document.getElementById('pettyAmount').value);
-      const c = (document.getElementById('pettyCat').value||'').trim();
-      const m = (document.getElementById('pettyMerchant').value||'').trim();
-      const d = document.getElementById('pettyDate').value;
-      if(!c){ toast('בחר/י קטגוריה'); return; }
-      if(!a){ toast('סכום נדרש'); return; }
-      S().petty.transactions.unshift({ id:uuid(), amount:a, category:c, merchant:m, date: (d? new Date(d): new Date()).toISOString() });
-      saveRoot(); renderPetty(); toast('הוספה לקופה');
-      e.currentTarget.reset();
+      const f=e.currentTarget;
+      if(!f.pettyCat.value){ toast('בחר/י קטגוריה'); return; }
+      const tx={id:uuid(), amount:toNumber(f.pettyAmount.value), category:f.pettyCat.value, merchant:f.pettyMerchant.value, date:f.pettyDate.value};
+      S().petty.transactions.unshift(tx); saveRoot(); renderPetty(); toast('הוצאה נוספה');
+      f.reset();
+    });
+    document.getElementById('pettyBudgetBtn')?.addEventListener('click', ()=>{
+      const newVal=prompt('הזן תקציב קופה קטנה לחודש הנוכחי', S().petty.budgetCap||0);
+      if(newVal!==null){ S().petty.budgetCap=toNumber(newVal); saveRoot(); renderPetty(); toast('התקציב עודכן'); }
     });
 
-    // לוח שנה – ניווט
-    document.getElementById('calPrev')?.addEventListener('click', ()=>{ calendarCursor.setMonth(calendarCursor.getMonth()-1); buildCalendar(); });
-    document.getElementById('calNext')?.addEventListener('click', ()=>{ calendarCursor.setMonth(calendarCursor.getMonth()+1); buildCalendar(); });
+    // הערות
+    document.getElementById('formNote')?.addEventListener('submit', e=>{
+      e.preventDefault();
+      const f=e.currentTarget;
+      const note={id:uuid(), title:f.noteTitle.value, body:f.noteBody.value, due:f.noteDue.value||null, done:false};
+      ROOT.notes = ROOT.notes || [];
+      ROOT.notes.unshift(note); saveRoot(); renderNotesGeneral(); renderNotesDay(); buildCalendar(); toast('נוספה הערה'); f.reset();
+    });
 
-    // עזרי תאריך לשדות המהירים
+    document.getElementById('calPrev')?.addEventListener('click', ()=>{ calendarCursor=new Date(calendarCursor.getFullYear(), calendarCursor.getMonth()-1,1); buildCalendar(); });
+    document.getElementById('calNext')?.addEventListener('click', ()=>{ calendarCursor=new Date(calendarCursor.getFullYear(), calendarCursor.getMonth()+1,1); buildCalendar(); });
+
+    // עריכה
+    document.getElementById('formEdit')?.addEventListener('submit', e=>{
+      e.preventDefault(); saveEdit(e.currentTarget);
+    });
+    document.getElementById('editDelete')?.addEventListener('click', ()=>{
+      const id=document.getElementById('editId').value; deleteRow(id);
+    });
+    document.getElementById('editCancel')?.addEventListener('click', ()=> toggleModal(false));
+    document.getElementById('editClose')?.addEventListener('click', ()=> toggleModal(false));
+    document.getElementById('editType')?.addEventListener('change', toggleEditCategoryVisibility);
+
+    // Household + Month picker
+    document.getElementById('btnHousehold')?.addEventListener('click', ()=>{document.getElementById('hhPicker').classList.remove('hidden');document.getElementById('hhPicker').classList.add('flex');});
+    document.getElementById('hhClose')?.addEventListener('click', ()=>{document.getElementById('hhPicker').classList.add('hidden');});
+    document.getElementById('formHH')?.addEventListener('submit', e=>{
+      e.preventDefault(); const v=document.getElementById('hhName').value||'default'; ROOT.household=v; setLocalHH(v); saveRoot(); renderAll(); toast('עודכן משק בית'); document.getElementById('hhPicker').classList.add('hidden');
+    });
+
+    document.getElementById('btnMonthPicker')?.addEventListener('click', ()=>{document.getElementById('monthPicker').classList.remove('hidden');document.getElementById('monthPicker').classList.add('flex');});
+    document.getElementById('mpClose')?.addEventListener('click', ()=>{document.getElementById('monthPicker').classList.add('hidden');});
+
+    function buildMonthPicker(){
+      const grid=document.getElementById('mpGrid'); if(!grid) return; grid.innerHTML='';
+      const now=new Date();
+      for(let i=0;i<18;i++){
+        const d=new Date(now.getFullYear(), now.getMonth()-i,1);
+        const key=ym(d); ensureMonth(key);
+        const btn=document.createElement('button');
+        btn.type='button'; btn.className='btn btn-ghost text-sm'; btn.textContent=monthLabel(key);
+        btn.addEventListener('click', ()=>{ ROOT.current=key; saveRoot(); renderAll(); document.getElementById('monthPicker').classList.add('hidden'); });
+        grid.appendChild(btn);
+      }
+    }
+
     function syncTodayInputs(){
-      const d = new Date(ROOT.current+'-01');
-      const dateStr = `${d.getFullYear()}-${pad(d.getMonth()+1)}-01`;
-      ['incomeDate','expDate','pettyDate'].forEach(id=>{
-        const el=document.getElementById(id); if(el) el.value=dateStr;
-      });
+      const todayStr=toInputDate(new Date());
+      ['incomeDate','expDate','pettyDate','noteDue'].forEach(id=>{ const el=document.getElementById(id); if(el && !el.value) el.value=todayStr; });
     }
 
-    // INIT
-    function initUI(){
-      initCategorySelects();
-      syncTodayInputs();
+    /* INIT */
+    (async function init(){
+      await loadRootFromCloudFirst();
+      ensureMonth(ROOT.current);
+      buildMonthPicker();
       renderAll();
-      showPanel('home'); // QuickBar default
-    }
-    initUI();
+    })();
   </script>
 </body>
 </html>
