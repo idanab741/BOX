@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>ארנק חכם – v11 Pro (Mobile)</title>
+  <title>ארנק חכם – v11 Pro.1 (Mobile)</title>
 
   <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -14,14 +14,14 @@
 
   <style>
     :root{
-      --card:#111827; /* slate-900 */
+      --card:#111827;
       --page:linear-gradient(to bottom,#0b1020,#0d1324);
-      --ink:#e5e7eb;  /* slate-200 */
-      --muted:#94a3b8; /* slate-400 */
-      --accent:#10b981; /* emerald-500 */
-      --accent-2:#34d399; /* emerald-400 */
-      --danger:#ef4444; /* red-500 */
-      --warn:#f59e0b;   /* amber-500 */
+      --ink:#e5e7eb;
+      --muted:#94a3b8;
+      --accent:#10b981;
+      --accent-2:#34d399;
+      --danger:#ef4444;
+      --warn:#f59e0b;
       --radius:16px;
       --tap:44px;
     }
@@ -42,7 +42,7 @@
     .btn-prim{background:var(--accent);color:#001b12}
     .btn-ghost{background:#0f172a;color:var(--ink);border:1px solid rgba(255,255,255,.06)}
     .btn-danger{background:#7f1d1d;color:#fecaca;border:1px solid rgba(239,68,68,.45)}
-    .kpi{background:#0f172a;border-radius:14px;padding:.55rem .75rem} /* תיקון 'rem' */
+    .kpi{background:#0f172a;border-radius:14px;padding:.55rem .75rem}
     .progress{height:8px;border-radius:999px;background:#1f2937;overflow:hidden}
     .progress > div{height:100%;background:var(--accent)}
     .progress.warn > div{background:var(--warn)}
@@ -62,54 +62,56 @@
 </head>
 <body>
   <main class="container p-3 space-y-4">
-    <!-- APP NAME BOX -->
-    <section class="card p-4" aria-label="שם אפליקציה">
+    <!-- HEADER -->
+    <section class="card p-4">
       <div class="flex items-center justify-between">
         <h1 class="text-[clamp(1rem,3.6vw,1.2rem)] font-bold tracking-tight">ארנק חכם</h1>
-        <button id="btnMonthPicker" class="chip text-xs" title="בחר חודש" type="button">בחר חודש ▾</button>
+        <button id="btnMonthPicker" class="chip text-xs" type="button">בחר חודש ▾</button>
       </div>
-      <!-- Row of month chips -->
       <div class="months flex gap-2 overflow-x-auto mt-3">
         <div id="monthsWrap" class="flex gap-2 w-full"></div>
       </div>
       <div id="currentMonthLabel" class="text-[.72rem] text-slate-400 mt-2"></div>
     </section>
 
-    <!-- MAIN TABS -->
+    <!-- TABS -->
     <nav class="seg card p-1" role="tablist" aria-label="ניווט">
       <button class="on" role="tab" aria-selected="true" aria-controls="view-home" data-view="home" type="button">ניהול מעקב</button>
       <button role="tab" aria-selected="false" aria-controls="view-expenses" data-view="expenses" type="button">הוצאות</button>
       <button role="tab" aria-selected="false" aria-controls="view-savings" data-view="savings" type="button">חיסכון</button>
     </nav>
 
-    <!-- VIEW: HOME -->
+    <!-- HOME -->
     <section id="view-home" class="space-y-4" data-view-panel="home">
-      <!-- Budget at top -->
-      <section class="card p-4" role="region" aria-labelledby="sec-budget2">
-        <h3 id="sec-budget2" class="text-[.95rem] font-semibold mb-2">תקציב כללי</h3>
+      <!-- CASH (עו"ש) -->
+      <section class="card p-4" role="region" aria-labelledby="sec-cash">
+        <h3 id="sec-cash" class="text-[.95rem] font-semibold mb-2">עובר ושב</h3>
         <div class="flex items-center justify-between">
-          <div class="text-xs text-slate-400">תקציב חודשי</div>
-          <div id="totalBudget" class="text-xl font-semibold">₪0</div>
+          <div class="text-xs text-slate-400">יתרה נוכחית</div>
+          <div id="cashNow" class="text-xl font-semibold">₪0</div>
         </div>
-        <form id="formTotalBudget" class="mt-3 space-y-2">
+        <form id="formCash" class="mt-3 space-y-2">
           <div class="flex gap-2">
-            <input name="amount" id="totalBudgetInput" class="input w-full text-base text-right" placeholder="לדוגמה: 12000" inputmode="decimal" />
+            <input id="cashInput" class="input w-full text-base text-right" placeholder="סכום עו״ש לחודש הנוכחי" inputmode="decimal" />
             <button class="btn btn-prim">שמור</button>
           </div>
         </form>
+        <div class="text-[.72rem] text-slate-500 mt-1">היתרה מתגלגלת קדימה עד שינוי יזום.</div>
       </section>
 
-      <!-- KPIs -->
+      <!-- KPIs (6 columns like your screenshot) -->
       <header class="card p-4 flex flex-col gap-3" role="banner">
         <div class="grid grid-cols-2 gap-2 text-[.9rem]" role="group" aria-label="מדדים חודשיים">
           <div class="kpi flex items-center justify-between"><span class="text-slate-400">הוצאות</span><b id="kpiCurExp">₪0</b></div>
           <div class="kpi flex items-center justify-between"><span class="text-slate-400">תקציב</span><b id="kpiBudget">₪0</b></div>
-          <div class="kpi flex items-center justify-between"><span class="text-slate-400">נטו</span><b id="kpiNet">₪0</b></div>
-          <div class="kpi flex items-center justify-between"><span class="text-slate-400">עודף חודשי</span><b id="kpiSavings">₪0</b></div>
+          <div class="kpi flex items-center justify-between"><span class="text-slate-400">עו״ש</span><b id="kpiCash">₪0</b></div>
+          <div class="kpi flex items-center justify-between"><span class="text-slate-400">עודף</span><b id="kpiSurplus">₪0</b></div>
+          <div class="kpi flex items-center justify-between"><span class="text-slate-400">חיסכון</span><b id="kpiSavingsSum">₪0</b></div>
+          <div class="kpi flex items-center justify-between"><span class="text-slate-400">פנסיה</span><b id="kpiPensionSum">₪0</b></div>
         </div>
       </header>
 
-      <!-- Gauge -->
+      <!-- GAUGE -->
       <section class="grid grid-cols-1 gap-4">
         <div class="card p-4" role="region" aria-label="ניצול חודשי">
           <div class="flex items-center justify-between mb-2">
@@ -130,7 +132,7 @@
         </div>
       </section>
 
-      <!-- Incomes -->
+      <!-- INCOMES -->
       <div class="grid grid-cols-1 gap-4">
         <div class="card p-4" role="region" aria-labelledby="sec-income">
           <div class="flex items-center justify-between mb-3">
@@ -159,7 +161,7 @@
       </div>
     </section>
 
-    <!-- VIEW: EXPENSES -->
+    <!-- EXPENSES -->
     <section id="view-expenses" class="space-y-4 hidden" data-view-panel="expenses">
       <div class="seg card p-1" role="tablist" aria-label="סוג הוצאות">
         <button class="on" data-subview="exp-var" aria-selected="true" type="button">משתנות</button>
@@ -206,19 +208,16 @@
         </div>
       </div>
 
-      <!-- Fixed (Recurring) -->
+      <!-- Fixed -->
       <div id="exp-fixed" class="space-y-3 hidden" data-subpanel="exp-fixed">
         <div class="card p-4">
           <h3 class="text-[.95rem] font-semibold mb-3">הוצאות קבועות חודשיות</h3>
-
           <form id="formFixedAdd" class="grid grid-cols-2 gap-2 mb-3">
             <input type="hidden" id="fixId" />
-            <select id="fixGroup" class="input" title="קבוצה">
-              <!-- ימולא דינאמית -->
-            </select>
-            <input id="fixLabel" class="input" placeholder="תיאור (למשל: נטפליקס / ביטוח רכב)" />
+            <select id="fixGroup" class="input"></select>
+            <input id="fixLabel" class="input" placeholder="תיאור (נטפליקס/ביטוח רכב...)" />
             <input id="fixAmount" class="input text-right" placeholder="סכום חודשי" inputmode="decimal" />
-            <input type="date" id="fixStart" class="input" placeholder="מתאריך" />
+            <input type="date" id="fixStart" class="input" />
             <div class="grid grid-cols-2 gap-2 col-span-2">
               <input type="date" id="fixUntil" class="input" placeholder="עד תאריך (אופציונלי)" />
               <input type="number" id="fixPayday" class="input" placeholder="יום חיוב (1–31)" min="1" max="31" />
@@ -228,15 +227,12 @@
               <button class="btn btn-ghost w-full" type="button" id="fixReset">ניקוי</button>
             </div>
           </form>
-
-          <div class="space-y-4" id="fixedGroupsWrap">
-            <!-- קבוצות מוצגות כאן -->
-          </div>
+          <div class="space-y-4" id="fixedGroupsWrap"></div>
         </div>
       </div>
     </section>
 
-    <!-- VIEW: SAVINGS -->
+    <!-- SAVINGS -->
     <section id="view-savings" class="space-y-4 hidden" data-view-panel="savings">
       <div class="seg card p-1" role="tablist" aria-label="חיסכון – סוגים">
         <button class="on" data-subview="sav-pension" aria-selected="true" type="button">פנסיה</button>
@@ -299,12 +295,12 @@
       </div>
     </section>
 
-    <footer class="text-center text-[.7rem] text-slate-500 py-14" role="contentinfo">
-      v11-Pro • מובייל (iPhone 14) • כל חודש נשמר בנפרד • RTL • Dark • קבועות מפוצלות + מעבר חכם
+    <footer class="text-center text-[.7rem] text-slate-500 py-14">
+      v11-Pro.1 • מובייל (iPhone 14) • RTL • Dark • עו״ש + 6 עמודות KPI
     </footer>
   </main>
 
-  <!-- Sticky Quick Bar -->
+  <!-- QUICK BAR -->
   <nav class="fixed inset-x-0 bottom-0 bg-[#0f172a]/95 backdrop-blur border-t border-slate-800 p-3 z-30" role="navigation" aria-label="פעולות מהירות">
     <div class="container flex items-center justify-around gap-2">
       <button id="quickAddExpense" class="btn btn-prim text-sm w-full" type="button">+ הוצאה</button>
@@ -313,10 +309,10 @@
     </div>
   </nav>
 
-  <!-- Toasts -->
+  <!-- TOASTS -->
   <div id="toastWrap" class="fixed bottom-[92px] right-4 flex flex-col gap-2 z-40" aria-live="polite" aria-atomic="true"></div>
 
-  <!-- Edit Modal (manual tx) -->
+  <!-- EDIT MODAL -->
   <div id="editModal" class="hidden fixed inset-0 z-40 items-end md:items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="editTitle">
     <div class="absolute inset-0 bg-black/50"></div>
     <div class="relative card w-full md:w-[520px] p-5 m-0 md:mx-auto">
@@ -350,7 +346,7 @@
     </div>
   </div>
 
-  <!-- Month Picker Modal -->
+  <!-- MONTH PICKER -->
   <div id="monthPicker" class="hidden fixed inset-0 z-40 items-end md:items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="mpTitle">
     <div class="absolute inset-0 bg-black/50"></div>
     <div class="relative card w-full md:w-[520px] p-5 m-0 md:mx-auto">
@@ -393,10 +389,11 @@
     function defaultMonthState(){
       return {
         totalBudget: 0,
-        transactions: [],      // {id,date,type:'income'|'expense',amount,gross?,category,merchant, synthetic?}
-        pensions: [],          // {id,owner,balance,monthly,lastUpdate}
-        recurring: [],         // v11: {id,group,label,amount,start,until,payday}
-        savings:{ krans:[], deposits:[], goals:[] } // krans/deposits: {id,name,balance,monthly}; goals: {id,name,target,monthly,balance}
+        cash: 0,              // NEW: עו"ש
+        transactions: [],     // {id,date,type:'income'|'expense',amount,gross?,category,merchant, synthetic?}
+        pensions: [],         // {id,owner,balance,monthly,lastUpdate}
+        recurring: [],        // {id,group,label,amount,start,until,payday}
+        savings:{ krans:[], deposits:[], goals:[] }
       };
     }
 
@@ -405,26 +402,23 @@
     function monthExists(key){ return !!(ROOT.months && ROOT.months[key]); }
     function S(){ return ROOT.months[ROOT.current]; }
 
-    /* migrate v10 -> v11 (recurring shape, add version) */
+    /* migrate v10 -> v11 and add cash field */
     function migrateIfNeeded(){
       if(!ROOT.version) ROOT.version = 10;
-      // normalize months container
       if(!ROOT.months) ROOT.months = {};
-      // migrate each month recurring items to new shape if needed
       for(const key of Object.keys(ROOT.months)){
         const M = ROOT.months[key];
+        if(M.cash==null) M.cash = 0; // add cash
         if(!Array.isArray(M.recurring)) M.recurring = [];
-        // v10 recurring might be [{id,name,amount,start,until}]
         if (M.recurring.some(r => !('group' in r))){
           M.recurring = M.recurring.map(r=>{
             if(r.group) return r;
             const nm = r.name || 'אחר';
             const group = FIXED_GROUPS.includes(nm) ? nm : 'אחר';
-            const label = (group==='אחר' ? nm : nm); // שומר את השם כתיאור
+            const label = (group==='אחר' ? nm : nm);
             return {
               id: r.id || uuid(),
-              group,
-              label,
+              group, label,
               amount: r.amount || 0,
               start: r.start || new Date(key+'-01').toISOString(),
               until: r.until || null,
@@ -437,10 +431,9 @@
       saveRoot();
     }
 
-    /* create month by copying prior month logic */
+    /* create month by copying prior month logic (cash rolls forward unchanged) */
     function ensureMonth(key){
       if(monthExists(key)) return;
-      // find the most recent month before key
       const keys = Object.keys(ROOT.months||{}).sort();
       const prev = keys.filter(k => k < key).slice(-1)[0];
       const base = defaultMonthState();
@@ -448,12 +441,9 @@
       if(prev){
         const P = ROOT.months[prev];
         base.totalBudget = P.totalBudget || 0;
-
-        // deep copy recurring & pensions
+        base.cash = P.cash || 0; // carry forward
         base.recurring = (P.recurring||[]).map(r=>({...r}));
         base.pensions  = (P.pensions ||[]).map(p=>({...p}));
-
-        // savings: copy definitions and roll balances by monthly
         base.savings.krans = (P.savings?.krans||[]).map(x=>({
           id:x.id||uuid(), name:x.name, monthly:Number(x.monthly||0),
           balance: Math.max(0, Number(x.balance||0) + Number(x.monthly||0))
@@ -467,18 +457,17 @@
           return { id:x.id||uuid(), name:x.name, target:Number(x.target||0), monthly:Number(x.monthly||0), balance:newBal };
         });
       }
-
       ROOT.months[key] = base;
       saveRoot();
     }
 
     function previousMonthKey(key){
       const [y,m] = key.split('-').map(Number);
-      const d = new Date(y, m-2, 1); // previous month
+      const d = new Date(y, m-2, 1);
       return ym(d);
     }
 
-    /* ========= INIT ROOT ========= */
+    /* ========= INIT ========= */
     let ROOT = loadRoot();
     if(!ROOT.months) ROOT.months = {};
     if(!ROOT.current) ROOT.current = '2025-08';
@@ -486,12 +475,11 @@
     ensureMonth(ROOT.current);
     saveRoot();
 
-    /* ========= MONTHS UI ========= */
+    /* ========= MONTH UI ========= */
     function monthLabel(key){ const d=new Date(key+'-01'); return d.toLocaleDateString('he-IL',{month:'long',year:'numeric'}); }
-
     function buildMonthStrip(){
       const WR = document.getElementById('monthsWrap'); WR.innerHTML='';
-      const start = new Date(2025,7,1); // Aug=7
+      const start = new Date(2025,7,1);
       const now = new Date();
       const end = new Date(now.getFullYear(), now.getMonth()+11, 1);
       for(let d=new Date(start); d<=end; d.setMonth(d.getMonth()+1)){
@@ -541,7 +529,7 @@
     /* ========= HELPERS ========= */
     const isSameMonth = (iso, key=ROOT.current) => { const d=new Date(iso); const [y,m]=key.split('-').map(Number); return d.getFullYear()===y && (d.getMonth()+1)===m; };
 
-    /* ========= RECURRING MATERIALIZATION ========= */
+    /* ========= RECURRING -> synthetic tx ========= */
     function recurringApplies(r, key=ROOT.current){
       const monthStart = new Date(key+'-01');
       const s = new Date(r.start);
@@ -551,7 +539,7 @@
     function materializeRecurringForMonth(key=ROOT.current){
       const list = [];
       const [y,m] = key.split('-').map(Number);
-      const dateFor = (pd) => new Date(y, (m-1), Math.max(1, Math.min(28, Number(pd)||1))); // 1..28 בטוח
+      const dateFor = (pd) => new Date(y, (m-1), Math.max(1, Math.min(28, Number(pd)||1)));
       for(const r of (S().recurring||[])){
         if(!recurringApplies(r,key)) continue;
         list.push({
@@ -565,6 +553,26 @@
         });
       }
       return list;
+    }
+
+    /* ========= SUMS ========= */
+    function totals(){
+      let net=0, gross=0, exp=0; const incomes=[], expenses=[];
+      const txManual = S().transactions.filter(t=> isSameMonth(t.date));
+      const txFixed  = materializeRecurringForMonth();
+      const txAll = [...txManual, ...txFixed];
+      for(const t of txAll){
+        if(t.type==='income'){ net += toNumber(t.amount); gross += toNumber(t.gross || t.amount); incomes.push(t); }
+        else { exp += toNumber(t.amount); expenses.push(t); }
+      }
+      return {net,gross,exp,incomes,expenses,txAll,txManual,txFixed};
+    }
+    function sumPension(){ return (S().pensions||[]).reduce((s,p)=> s + toNumber(p.balance||0), 0); }
+    function sumSavings(){
+      const k = (S().savings?.krans||[]).reduce((s,x)=> s+toNumber(x.balance||0),0);
+      const d = (S().savings?.deposits||[]).reduce((s,x)=> s+toNumber(x.balance||0),0);
+      const g = (S().savings?.goals||[]).reduce((s,x)=> s+toNumber(x.balance||0),0);
+      return k+d+g;
     }
 
     /* ========= GAUGE ========= */
@@ -585,21 +593,6 @@
       leftEl.className = (left < 0 ? 'text-red-400 ' : '') + 'font-semibold';
     }
 
-    /* ========= TOTALS ========= */
-    function totals(){
-      let net=0, gross=0, exp=0; const incomes=[], expenses=[];
-      const includeFixed = true;
-      const txManual = S().transactions.filter(t=> isSameMonth(t.date));
-      const txFixed = includeFixed ? materializeRecurringForMonth() : [];
-      const txAll = [...txManual, ...txFixed];
-
-      for(const t of txAll){
-        if(t.type==='income'){ net += toNumber(t.amount); gross += toNumber(t.gross || t.amount); incomes.push(t); }
-        else { exp += toNumber(t.amount); expenses.push(t); }
-      }
-      return {net,gross,exp,incomes,expenses,txAll,txManual,txFixed};
-    }
-
     /* ========= RENDER ========= */
     function initCategorySelects(){
       const selAdd = document.getElementById('catSelect');
@@ -612,7 +605,6 @@
         sel.dataset.inited='1';
       });
     }
-
     function updateCatBadge(){
       const sel = document.getElementById('catSelect'); const badge = document.getElementById('catBadge');
       if(!sel || !badge) return;
@@ -645,7 +637,7 @@
 
     function renderPensions(){
       const list = document.getElementById('pensionList'); if(!list) return; list.innerHTML='';
-      const total = S().pensions.reduce((s,p)=> s + toNumber(p.balance||0), 0);
+      const total = sumPension();
       const totalEl = document.getElementById('penTotal'); if(totalEl) totalEl.textContent = ils(total);
       if(S().pensions.length===0){
         const li=document.createElement('li'); li.className='text-slate-400 text-sm'; li.textContent='אין חשבונות פנסיה—הוסף/י למעלה.'; list.appendChild(li);
@@ -713,9 +705,7 @@
 
     function renderFixed(){
       const wrap=document.getElementById('fixedGroupsWrap'); if(!wrap) return; wrap.innerHTML='';
-      const groupsMap = {};
-      for(const g of FIXED_GROUPS) groupsMap[g] = [];
-
+      const groupsMap = {}; for(const g of FIXED_GROUPS) groupsMap[g] = [];
       (S().recurring||[]).forEach(r=>{ if(!groupsMap[r.group]) groupsMap[r.group]=[]; groupsMap[r.group].push(r); });
 
       for(const g of FIXED_GROUPS){
@@ -791,19 +781,33 @@
 
     function renderHeaderAndGauge(){
       const t = totals();
-      document.getElementById('kpiBudget').textContent = ils(S().totalBudget);
-      document.getElementById('kpiNet').textContent    = ils(t.net);
-      document.getElementById('grossSum').textContent  = ils(t.gross);
-      document.getElementById('netSum').textContent    = ils(t.net);
-      document.getElementById('totalBudget').textContent = ils(S().totalBudget);
-
-      const spent = t.exp; // כולל משתנות + קבועות ממומשות
+      const spent = t.exp;
       const monthlySurplus = t.net - spent;
-      document.getElementById('kpiSavings').textContent = ils(monthlySurplus);
-      document.getElementById('kpiCurExp').textContent  = ils(t.exp);
 
-      const left  = (S().totalBudget||0) - spent;
-      const pct   = S().totalBudget>0 ? spent/S().totalBudget : 0;
+      // numbers
+      const budget = S().totalBudget||0;
+      const cash   = S().cash||0;
+      const savSum = sumSavings();
+      const penSum = sumPension();
+
+      // KPIs
+      const set = (id, val)=>{ const el=document.getElementById(id); if(el) el.textContent = ils(val); };
+      set('kpiBudget', budget);
+      set('kpiCurExp', t.exp);
+      set('kpiCash',   cash);
+      set('kpiSurplus', monthlySurplus);
+      set('kpiSavingsSum', savSum);
+      set('kpiPensionSum', penSum);
+
+      // header small numbers
+      const ls = (id,val)=>{ const el=document.getElementById(id); if(el) el.textContent = ils(val); };
+      ls('totalBudget', budget);
+      ls('grossSum', t.gross);
+      ls('netSum', t.net);
+
+      // gauge
+      const left  = budget - spent;
+      const pct   = budget>0 ? spent/budget : 0;
       setGauge(pct, spent, left);
     }
 
@@ -858,7 +862,6 @@
     /* ========= EDIT ========= */
     function openEdit(id){
       if(String(id).startsWith('rec-')){
-        // synthetic row – לא נערך כאן
         document.querySelector('.seg [data-view="expenses"]').click();
         document.querySelector('#view-expenses .seg [data-subview="exp-fixed"]').click();
         toast('עריכת חיוב קבוע נעשית בלשונית "קבועות".');
@@ -919,13 +922,12 @@
       document.getElementById('fixGroup').selectedIndex=0;
       document.getElementById('fixLabel').value='';
       document.getElementById('fixAmount').value='';
-      // fixStart מתמלא ב-syncTodayInputs
       document.getElementById('fixUntil').value='';
       document.getElementById('fixPayday').value='';
     }
 
     /* ========= EVENTS ========= */
-    // main tabs
+    // tabs
     document.querySelectorAll('.seg [data-view]').forEach(btn=>{
       btn.addEventListener('click', ()=>{
         const seg = btn.closest('.seg');
@@ -938,7 +940,7 @@
       });
     });
 
-    // expenses sub tabs
+    // expenses subtabs
     document.querySelectorAll('#view-expenses .seg [data-subview]').forEach(btn=>{
       btn.addEventListener('click', ()=>{
         const seg = btn.closest('.seg');
@@ -951,7 +953,7 @@
       });
     });
 
-    // savings sub tabs
+    // savings subtabs
     document.querySelectorAll('#view-savings .seg [data-subview]').forEach(btn=>{
       btn.addEventListener('click', ()=>{
         const seg = btn.closest('.seg');
@@ -969,6 +971,14 @@
       e.preventDefault();
       const v=toNumber(document.getElementById('totalBudgetInput').value);
       S().totalBudget=v; saveRoot(); renderAll(); toast('התקציב עודכן');
+      e.currentTarget.reset();
+    });
+
+    // CASH
+    document.getElementById('formCash')?.addEventListener('submit', e=>{
+      e.preventDefault();
+      const v=toNumber(document.getElementById('cashInput').value);
+      S().cash=v; saveRoot(); renderAll(); toast('יתרת עו״ש עודכנה');
       e.currentTarget.reset();
     });
 
@@ -1023,84 +1033,21 @@
       const until=document.getElementById('fixUntil').value || null;
       const payday = Number(document.getElementById('fixPayday').value)||1;
       if(!group || !amount){ toast('קבוצה וסכום נדרשים'); return; }
-
       const exIndex = S().recurring.findIndex(r=>r.id===id);
       const rec = {id, group, label, amount, start:new Date(start).toISOString(), until:until? new Date(until).toISOString():null, payday};
       if(exIndex>-1){ S().recurring[exIndex]=rec; toast('חיוב קבוע עודכן'); }
       else { S().recurring.push(rec); toast('חיוב קבוע נוסף'); }
-
       saveRoot(); renderAll(); resetFixedForm();
     });
     document.getElementById('fixReset')?.addEventListener('click', resetFixedForm);
 
-    // pension form
-    document.getElementById('formPensionAdd')?.addEventListener('submit', e=>{
-      e.preventDefault();
-      const f=e.currentTarget;
-      upsertPension({
-        owner:f.querySelector('#penOwner').value,
-        balance:f.querySelector('#penBalance').value,
-        monthly:f.querySelector('#penMonthly').value
-      });
-      f.reset();
-    });
-
-    // savings forms
-    document.getElementById('formKeren')?.addEventListener('submit', e=>{
-      e.preventDefault();
-      const n=document.getElementById('krName').value.trim();
-      const b=toNumber(document.getElementById('krBalance').value);
-      const m=toNumber(document.getElementById('krMonthly').value);
-      if(!n){toast('שם קרן נדרש');return;}
-      const ex=S().savings.krans.find(x=>x.name===n);
-      if(ex){ ex.balance=b; ex.monthly=m; } else { S().savings.krans.push({id:uuid(), name:n, balance:b, monthly:m}); }
-      saveRoot(); renderAll(); toast('קרן השתלמות נשמרה'); e.currentTarget.reset();
-    });
-    document.getElementById('formDeposit')?.addEventListener('submit', e=>{
-      e.preventDefault();
-      const n=document.getElementById('depName').value.trim();
-      const b=toNumber(document.getElementById('depBalance').value);
-      const m=toNumber(document.getElementById('depAdd').value);
-      if(!n){toast('שם חשבון נדרש');return;}
-      const ex=S().savings.deposits.find(x=>x.name===n);
-      if(ex){ ex.balance=b; ex.monthly=m; } else { S().savings.deposits.push({id:uuid(), name:n, balance:b, monthly:m}); }
-      saveRoot(); renderAll(); toast('פיקדון נשמר'); e.currentTarget.reset();
-    });
-    document.getElementById('formGoal')?.addEventListener('submit', e=>{
-      e.preventDefault();
-      const n=document.getElementById('goalName').value.trim();
-      const t=toNumber(document.getElementById('goalTarget').value);
-      const m=toNumber(document.getElementById('goalMonthly').value);
-      if(!n||!t){toast('שם ויעד נדרשים');return;}
-      const ex=S().savings.goals.find(x=>x.name===n);
-      if(ex){ ex.target=t; ex.monthly=m; ex.balance=ex.balance||0; }
-      else { S().savings.goals.push({id:uuid(), name:n, target:t, monthly:m, balance:0}); }
-      saveRoot(); renderAll(); toast('תכנית חיסכון נשמרה'); e.currentTarget.reset();
-    });
-
-    // quick bar
-    document.getElementById('quickAddExpense')?.addEventListener('click', ()=>{
-      document.querySelector('.seg [data-view="expenses"]').click();
-      document.getElementById('expAmount').focus();
-    });
-    document.getElementById('quickAddIncome')?.addEventListener('click', ()=>{
-      document.querySelector('.seg [data-view="home"]').click();
-      const f=document.getElementById('formIncomeInline'); if(f && f.classList.contains('hidden')) f.classList.remove('hidden');
-      document.getElementById('incomeNet').focus();
-    });
-    document.getElementById('quickAddRecurring')?.addEventListener('click', ()=>{
-      document.querySelector('.seg [data-view="expenses"]').click();
-      document.querySelector('#view-expenses .seg [data-subview="exp-fixed"]').click();
-      document.getElementById('fixGroup').focus();
-    });
-
-    // edit modal events
+    // edit modal
     document.getElementById('editClose')?.addEventListener('click', ()=> toggleModal(false));
     document.getElementById('editCancel')?.addEventListener('click', ()=> toggleModal(false));
     document.getElementById('formEdit')?.addEventListener('submit', e=>{ e.preventDefault(); saveEdit(e.currentTarget); });
     document.getElementById('editDelete')?.addEventListener('click', ()=> deleteRow(document.getElementById('editId').value));
 
-    // month picker events
+    // month picker
     document.getElementById('btnMonthPicker')?.addEventListener('click', openMonthPicker);
     document.getElementById('mpClose')?.addEventListener('click', ()=> toggleMP(false));
 
@@ -1110,6 +1057,10 @@
       ['incomeDate','expDate','fixStart'].forEach(id=>{
         const el=document.getElementById(id); if(el) el.value=dateStr;
       });
+      const cashInput = document.getElementById('cashInput');
+      if(cashInput) cashInput.value = '';
+      const cashNow = document.getElementById('cashNow');
+      if(cashNow) cashNow.textContent = ils(S().cash||0);
     }
 
     function initCategoryFilters(){
@@ -1129,7 +1080,6 @@
       syncTodayInputs();
       renderAll();
     }
-
     initUI();
   </script>
 </body>
