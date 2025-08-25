@@ -3,20 +3,25 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>ארנק חכם – v10 Mobile (iPhone 14)</title>
+  <title>ארנק חכם – v11 Pro (Mobile)</title>
+
+  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&display=swap" rel="stylesheet">
+
   <style>
     :root{
-      --card:#111827; /* dark slate-900 */
+      --card:#111827; /* slate-900 */
       --page:linear-gradient(to bottom,#0b1020,#0d1324);
-      --ink:#e5e7eb; /* text slate-200 */
+      --ink:#e5e7eb;  /* slate-200 */
       --muted:#94a3b8; /* slate-400 */
       --accent:#10b981; /* emerald-500 */
       --accent-2:#34d399; /* emerald-400 */
       --danger:#ef4444; /* red-500 */
-      --warn:#f59e0b; /* amber-500 */
+      --warn:#f59e0b;   /* amber-500 */
       --radius:16px;
       --tap:44px;
     }
@@ -25,8 +30,7 @@
       font-family:'Rubik',ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;
       background:var(--page);
       color:var(--ink);
-      -webkit-font-smoothing:antialiased;
-      -moz-osx-font-smoothing:grayscale;
+      -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
       padding-bottom:calc(env(safe-area-inset-bottom) + 84px);
     }
     .container{max-width:28rem;margin-inline:auto}
@@ -38,7 +42,7 @@
     .btn-prim{background:var(--accent);color:#001b12}
     .btn-ghost{background:#0f172a;color:var(--ink);border:1px solid rgba(255,255,255,.06)}
     .btn-danger{background:#7f1d1d;color:#fecaca;border:1px solid rgba(239,68,68,.45)}
-    .kpi{background:#0f172a;border-radius:14px;padding:.55 рем .75rem}
+    .kpi{background:#0f172a;border-radius:14px;padding:.55rem .75rem} /* תיקון 'rem' */
     .progress{height:8px;border-radius:999px;background:#1f2937;overflow:hidden}
     .progress > div{height:100%;background:var(--accent)}
     .progress.warn > div{background:var(--warn)}
@@ -53,6 +57,7 @@
     .months{scrollbar-width:none}
     .input{border-radius:12px;border:1px solid rgba(255,255,255,.08);background:#0f172a;color:var(--ink);padding:.75rem .85rem}
     .label{color:var(--muted);font-size:.8rem}
+    .badge{font-size:.7rem;border:1px solid rgba(255,255,255,.12);padding:.2rem .45rem;border-radius:999px;background:#0b1224}
   </style>
 </head>
 <body>
@@ -175,9 +180,12 @@
             <input type="date" id="expDate" class="input" />
             <button class="btn btn-prim">הוסף הוצאה</button>
           </form>
+
           <div class="rounded-xl p-3 mb-3 grid grid-cols-1 gap-2 bg-[#0f172a]" role="group" aria-label="מסננים">
-            <input id="filterText" class="input" placeholder="חיפוש ספק/תיאור" aria-label="חיפוש" />
-            <select id="filterCat" class="input" aria-label="סינון לפי קטגוריה"></select>
+            <div class="grid grid-cols-2 gap-2">
+              <input id="filterText" class="input" placeholder="חיפוש ספק/תיאור" aria-label="חיפוש" />
+              <select id="filterCat" class="input" aria-label="סינון לפי קטגוריה"></select>
+            </div>
             <div class="grid grid-cols-2 gap-2">
               <input type="date" id="filterFrom" class="input" aria-label="מתאריך" />
               <input type="date" id="filterTo" class="input" aria-label="עד תאריך" />
@@ -188,27 +196,42 @@
               <option value="amt_desc">מיין: סכום ↓</option>
               <option value="amt_asc">מיין: סכום ↑</option>
             </select>
+            <label class="text-[.8rem] text-slate-400 flex items-center gap-2">
+              <input type="checkbox" id="toggleFixedInList" class="accent-emerald-500" checked>
+              הצג גם חיובים קבועים ברשימה
+            </label>
           </div>
+
           <ul id="expenseList" class="text-[.92rem] space-y-1 max-h-[60vh] overflow-auto mt-1" role="list" aria-live="polite"></ul>
         </div>
       </div>
 
-      <!-- Fixed -->
+      <!-- Fixed (Recurring) -->
       <div id="exp-fixed" class="space-y-3 hidden" data-subpanel="exp-fixed">
         <div class="card p-4">
           <h3 class="text-[.95rem] font-semibold mb-3">הוצאות קבועות חודשיות</h3>
+
           <form id="formFixedAdd" class="grid grid-cols-2 gap-2 mb-3">
-            <select id="fixName" class="input">
-              <option>שכירות</option><option>ארנונה</option><option>ועד בית</option>
-              <option>חנייה</option><option>אינטרנט</option><option>חשמל</option>
-              <option>מים</option><option>סלולרי</option><option>אחר</option>
+            <input type="hidden" id="fixId" />
+            <select id="fixGroup" class="input" title="קבוצה">
+              <!-- ימולא דינאמית -->
             </select>
-            <input id="fixAmount" class="input text-right" placeholder="סכום" inputmode="decimal" />
+            <input id="fixLabel" class="input" placeholder="תיאור (למשל: נטפליקס / ביטוח רכב)" />
+            <input id="fixAmount" class="input text-right" placeholder="סכום חודשי" inputmode="decimal" />
             <input type="date" id="fixStart" class="input" placeholder="מתאריך" />
-            <input type="date" id="fixUntil" class="input" placeholder="עד תאריך (אופציונלי)" />
-            <button class="btn btn-prim col-span-2" type="submit">הוסף/עדכן</button>
+            <div class="grid grid-cols-2 gap-2 col-span-2">
+              <input type="date" id="fixUntil" class="input" placeholder="עד תאריך (אופציונלי)" />
+              <input type="number" id="fixPayday" class="input" placeholder="יום חיוב (1–31)" min="1" max="31" />
+            </div>
+            <div class="col-span-2 flex gap-2">
+              <button class="btn btn-prim w-full" type="submit">הוסף/עדכן</button>
+              <button class="btn btn-ghost w-full" type="button" id="fixReset">ניקוי</button>
+            </div>
           </form>
-          <ul id="fixedList" class="space-y-2"></ul>
+
+          <div class="space-y-4" id="fixedGroupsWrap">
+            <!-- קבוצות מוצגות כאן -->
+          </div>
         </div>
       </div>
     </section>
@@ -277,7 +300,7 @@
     </section>
 
     <footer class="text-center text-[.7rem] text-slate-500 py-14" role="contentinfo">
-      v10 • מובייל (iPhone 14) • כל חודש נשמר בנפרד • RTL • Dark
+      v11-Pro • מובייל (iPhone 14) • כל חודש נשמר בנפרד • RTL • Dark • קבועות מפוצלות + מעבר חכם
     </footer>
   </main>
 
@@ -293,7 +316,7 @@
   <!-- Toasts -->
   <div id="toastWrap" class="fixed bottom-[92px] right-4 flex flex-col gap-2 z-40" aria-live="polite" aria-atomic="true"></div>
 
-  <!-- Edit Modal -->
+  <!-- Edit Modal (manual tx) -->
   <div id="editModal" class="hidden fixed inset-0 z-40 items-end md:items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="editTitle">
     <div class="absolute inset-0 bg-black/50"></div>
     <div class="relative card w-full md:w-[520px] p-5 m-0 md:mx-auto">
@@ -359,34 +382,113 @@
     }
 
     /* ========= CATEGORIES ========= */
+    const FIXED_GROUPS = ["שכירות","ארנונה","ועד בית","אינטרנט","חשמל","מים","סלולרי","ביטוחים","מנויים","חנייה","חינוך/גן","אחר"];
     const FIXED = ["שכירות","ארנונה","ועד בית","אינטרנט","חשמל","מים","סלולרי","ביטוחים","רכב – ביטוח/טסט/דלק","חנייה","מנויים","חינוך/גן","אחר"];
     const VARIABLE = ["מזון","מסעדות/בילויים/חיי לילה","קניות/אופנה","פארם/טיפוח","שונות","מתנות","תחבורה ציבורית/מוניות","נסיעות/טיסות","תחזוקת בית","בריאות/תרופות"];
     const CATEGORIES = [...new Set([ ...FIXED, ...VARIABLE ])];
 
-    /* ========= STORAGE ========= */
+    /* ========= STORAGE & SCHEMA ========= */
     const ROOT_KEY = 'smartwallet_v10_root';
+
     function defaultMonthState(){
       return {
         totalBudget: 0,
-        transactions: [],      // {id,date,type:'income'|'expense',amount,gross?,category,merchant}
+        transactions: [],      // {id,date,type:'income'|'expense',amount,gross?,category,merchant, synthetic?}
         pensions: [],          // {id,owner,balance,monthly,lastUpdate}
-        recurring: [],         // {id,name,amount,start,until}
-        savings:{ krans:[], deposits:[], goals:[] }
+        recurring: [],         // v11: {id,group,label,amount,start,until,payday}
+        savings:{ krans:[], deposits:[], goals:[] } // krans/deposits: {id,name,balance,monthly}; goals: {id,name,target,monthly,balance}
       };
     }
+
     function loadRoot(){ try{ return JSON.parse(localStorage.getItem(ROOT_KEY)) || {}; } catch{ return {}; } }
     function saveRoot(){ localStorage.setItem(ROOT_KEY, JSON.stringify(ROOT)); }
-    function ensureMonth(key){ if(!ROOT.months[key]) ROOT.months[key] = defaultMonthState(); }
+    function monthExists(key){ return !!(ROOT.months && ROOT.months[key]); }
     function S(){ return ROOT.months[ROOT.current]; }
 
-    /* Initialize starting at Aug 2025 */
+    /* migrate v10 -> v11 (recurring shape, add version) */
+    function migrateIfNeeded(){
+      if(!ROOT.version) ROOT.version = 10;
+      // normalize months container
+      if(!ROOT.months) ROOT.months = {};
+      // migrate each month recurring items to new shape if needed
+      for(const key of Object.keys(ROOT.months)){
+        const M = ROOT.months[key];
+        if(!Array.isArray(M.recurring)) M.recurring = [];
+        // v10 recurring might be [{id,name,amount,start,until}]
+        if (M.recurring.some(r => !('group' in r))){
+          M.recurring = M.recurring.map(r=>{
+            if(r.group) return r;
+            const nm = r.name || 'אחר';
+            const group = FIXED_GROUPS.includes(nm) ? nm : 'אחר';
+            const label = (group==='אחר' ? nm : nm); // שומר את השם כתיאור
+            return {
+              id: r.id || uuid(),
+              group,
+              label,
+              amount: r.amount || 0,
+              start: r.start || new Date(key+'-01').toISOString(),
+              until: r.until || null,
+              payday: 1
+            };
+          });
+        }
+      }
+      ROOT.version = 11;
+      saveRoot();
+    }
+
+    /* create month by copying prior month logic */
+    function ensureMonth(key){
+      if(monthExists(key)) return;
+      // find the most recent month before key
+      const keys = Object.keys(ROOT.months||{}).sort();
+      const prev = keys.filter(k => k < key).slice(-1)[0];
+      const base = defaultMonthState();
+
+      if(prev){
+        const P = ROOT.months[prev];
+        base.totalBudget = P.totalBudget || 0;
+
+        // deep copy recurring & pensions
+        base.recurring = (P.recurring||[]).map(r=>({...r}));
+        base.pensions  = (P.pensions ||[]).map(p=>({...p}));
+
+        // savings: copy definitions and roll balances by monthly
+        base.savings.krans = (P.savings?.krans||[]).map(x=>({
+          id:x.id||uuid(), name:x.name, monthly:Number(x.monthly||0),
+          balance: Math.max(0, Number(x.balance||0) + Number(x.monthly||0))
+        }));
+        base.savings.deposits = (P.savings?.deposits||[]).map(x=>({
+          id:x.id||uuid(), name:x.name, monthly:Number(x.monthly||0),
+          balance: Math.max(0, Number(x.balance||0) + Number(x.monthly||0))
+        }));
+        base.savings.goals = (P.savings?.goals||[]).map(x=>{
+          const newBal = Math.min(Number(x.target||0), Number(x.balance||0) + Number(x.monthly||0));
+          return { id:x.id||uuid(), name:x.name, target:Number(x.target||0), monthly:Number(x.monthly||0), balance:newBal };
+        });
+      }
+
+      ROOT.months[key] = base;
+      saveRoot();
+    }
+
+    function previousMonthKey(key){
+      const [y,m] = key.split('-').map(Number);
+      const d = new Date(y, m-2, 1); // previous month
+      return ym(d);
+    }
+
+    /* ========= INIT ROOT ========= */
     let ROOT = loadRoot();
     if(!ROOT.months) ROOT.months = {};
     if(!ROOT.current) ROOT.current = '2025-08';
-    ensureMonth(ROOT.current); saveRoot();
+    migrateIfNeeded();
+    ensureMonth(ROOT.current);
+    saveRoot();
 
-    /* ========= MONTH UI ========= */
+    /* ========= MONTHS UI ========= */
     function monthLabel(key){ const d=new Date(key+'-01'); return d.toLocaleDateString('he-IL',{month:'long',year:'numeric'}); }
+
     function buildMonthStrip(){
       const WR = document.getElementById('monthsWrap'); WR.innerHTML='';
       const start = new Date(2025,7,1); // Aug=7
@@ -420,6 +522,7 @@
       const end = new Date(new Date().getFullYear(), new Date().getMonth()+11, 1);
       for(let d=new Date(start); d<=end; d.setMonth(d.getMonth()+1)){
         const key=ym(d);
+        ensureMonth(key);
         const b=document.createElement('button');
         b.type='button';
         b.className='btn btn-ghost';
@@ -437,6 +540,32 @@
 
     /* ========= HELPERS ========= */
     const isSameMonth = (iso, key=ROOT.current) => { const d=new Date(iso); const [y,m]=key.split('-').map(Number); return d.getFullYear()===y && (d.getMonth()+1)===m; };
+
+    /* ========= RECURRING MATERIALIZATION ========= */
+    function recurringApplies(r, key=ROOT.current){
+      const monthStart = new Date(key+'-01');
+      const s = new Date(r.start);
+      const u = r.until ? new Date(r.until) : null;
+      return s <= monthStart && (!u || u >= monthStart);
+    }
+    function materializeRecurringForMonth(key=ROOT.current){
+      const list = [];
+      const [y,m] = key.split('-').map(Number);
+      const dateFor = (pd) => new Date(y, (m-1), Math.max(1, Math.min(28, Number(pd)||1))); // 1..28 בטוח
+      for(const r of (S().recurring||[])){
+        if(!recurringApplies(r,key)) continue;
+        list.push({
+          id: `rec-${r.id}@${key}`,
+          date: dateFor(r.payday||1).toISOString(),
+          type:'expense',
+          amount: Number(r.amount||0),
+          category: r.group,
+          merchant: r.label ? `${r.label}` : r.group,
+          synthetic: true
+        });
+      }
+      return list;
+    }
 
     /* ========= GAUGE ========= */
     const gaugeColor = (p) => p<=0.75? 'var(--accent)' : p<=0.9? 'var(--warn)' : p<=1.0? '#f97316' : 'var(--danger)';
@@ -459,12 +588,16 @@
     /* ========= TOTALS ========= */
     function totals(){
       let net=0, gross=0, exp=0; const incomes=[], expenses=[];
-      for(const t of S().transactions){
-        if(!isSameMonth(t.date)) continue;
+      const includeFixed = true;
+      const txManual = S().transactions.filter(t=> isSameMonth(t.date));
+      const txFixed = includeFixed ? materializeRecurringForMonth() : [];
+      const txAll = [...txManual, ...txFixed];
+
+      for(const t of txAll){
         if(t.type==='income'){ net += toNumber(t.amount); gross += toNumber(t.gross || t.amount); incomes.push(t); }
         else { exp += toNumber(t.amount); expenses.push(t); }
       }
-      return {net,gross,exp,incomes,expenses};
+      return {net,gross,exp,incomes,expenses,txAll,txManual,txFixed};
     }
 
     /* ========= RENDER ========= */
@@ -474,11 +607,12 @@
       const selFilter = document.getElementById('filterCat');
       [selAdd, selEdit, selFilter].forEach((sel)=>{
         if(!sel || sel.dataset.inited) return;
-        const list = sel===selFilter ? ["כל הקטגוריות", ...VARIABLE] : ["— בחר קטגוריה —", ...VARIABLE];
+        const list = sel===selFilter ? ["כל הקטגוריות", ...VARIABLE, ...FIXED_GROUPS] : ["— בחר קטגוריה —", ...VARIABLE];
         list.forEach((c,i)=>{ const o=document.createElement('option'); o.value=i?c:''; o.textContent=c; sel.appendChild(o);});
         sel.dataset.inited='1';
       });
     }
+
     function updateCatBadge(){
       const sel = document.getElementById('catSelect'); const badge = document.getElementById('catBadge');
       if(!sel || !badge) return;
@@ -541,8 +675,11 @@
       const df = document.getElementById('filterFrom').value||'';
       const dt = document.getElementById('filterTo').value||'';
       const sortBy = document.getElementById('sortBy').value||'date_desc';
+      const showFixed = document.getElementById('toggleFixedInList')?.checked;
 
-      let list = S().transactions.filter(x=> x.type==='expense' && isSameMonth(x.date));
+      const {txManual,txFixed} = totals();
+      let list = [...txManual, ...(showFixed? txFixed : [])].filter(x=> x.type==='expense' && isSameMonth(x.date));
+
       if(q) list = list.filter(x=> (x.merchant||'').toLowerCase().includes(q) || (x.category||'').toLowerCase().includes(q));
       if(fcat) list = list.filter(x=> x.category===fcat);
       if(df){ const from = new Date(df); list = list.filter(x=> new Date(x.date)>=from); }
@@ -560,7 +697,7 @@
         const li=document.createElement('li'); li.className='row flex items-center justify-between gap-2';
         li.innerHTML = `
           <div class="flex flex-col">
-            <span>${esc(x.category)}${x.merchant ? ' • '+esc(x.merchant) : ''}</span>
+            <span>${esc(x.category)}${x.merchant ? ' • '+esc(x.merchant) : ''} ${x.synthetic? '<span class="badge">קבוע</span>':''}</span>
             <span class="text-slate-400 text-xs">${new Date(x.date).toLocaleDateString('he-IL')}</span>
           </div>
           <div class="flex items-center gap-2">
@@ -575,23 +712,47 @@
     }
 
     function renderFixed(){
-      const ul=document.getElementById('fixedList'); if(!ul) return; ul.innerHTML='';
-      S().recurring.forEach(r=>{
-        const li=document.createElement('li'); li.className='row card p-3 flex items-center justify-between';
-        li.innerHTML=`<div>
-            <div class="font-medium">${esc(r.name)}</div>
-            <div class="text-xs text-slate-500">מ-${new Date(r.start).toLocaleDateString('he-IL')}${r.until? ' עד '+new Date(r.until).toLocaleDateString('he-IL'):''}</div>
+      const wrap=document.getElementById('fixedGroupsWrap'); if(!wrap) return; wrap.innerHTML='';
+      const groupsMap = {};
+      for(const g of FIXED_GROUPS) groupsMap[g] = [];
+
+      (S().recurring||[]).forEach(r=>{ if(!groupsMap[r.group]) groupsMap[r.group]=[]; groupsMap[r.group].push(r); });
+
+      for(const g of FIXED_GROUPS){
+        const items = groupsMap[g];
+        const sec = document.createElement('section');
+        sec.innerHTML = `
+          <div class="flex items-center justify-between mb-2">
+            <h4 class="font-semibold">${esc(g)}</h4>
+            <span class="text-xs text-slate-400">${items.length} רשומות</span>
           </div>
-          <div class="flex items-center gap-3">
-            <div class="text-sm">${ils(r.amount)} לחודש</div>
-            <button class="btn btn-danger text-xs" data-del="${esc(r.id)}" type="button">מחק</button>
-          </div>`;
-        li.querySelector('[data-del]')?.addEventListener('click',()=>{
-          const i=S().recurring.findIndex(x=>x.id===r.id);
-          if(i>-1){S().recurring.splice(i,1); saveRoot(); renderAll();}
+          <ul class="space-y-2"></ul>
+        `;
+        const ul = sec.querySelector('ul');
+        items.forEach(r=>{
+          const li = document.createElement('li');
+          li.className='row card p-3 flex items-center justify-between';
+          const period = `מ-${new Date(r.start).toLocaleDateString('he-IL')}${r.until? ' עד '+new Date(r.until).toLocaleDateString('he-IL'):''}`;
+          li.innerHTML = `
+            <div>
+              <div class="font-medium">${esc(r.label||r.group)}</div>
+              <div class="text-xs text-slate-500">${period} • יום חיוב: ${r.payday||1}</div>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="text-sm">${ils(r.amount)} לחודש</div>
+              <button class="btn btn-ghost text-xs" data-edit="${esc(r.id)}" type="button">ערוך</button>
+              <button class="btn btn-danger text-xs" data-del="${esc(r.id)}" type="button">מחק</button>
+            </div>
+          `;
+          li.querySelector('[data-edit]')?.addEventListener('click', ()=> editFixedPrefill(r.id));
+          li.querySelector('[data-del]')?.addEventListener('click', ()=>{
+            const i=S().recurring.findIndex(x=>x.id===r.id);
+            if(i>-1){S().recurring.splice(i,1); saveRoot(); renderAll(); toast('חיוב קבוע הוסר');}
+          });
+          ul.appendChild(li);
         });
-        ul.appendChild(li);
-      });
+        wrap.appendChild(sec);
+      }
     }
 
     function renderSavings(){
@@ -622,7 +783,7 @@
           const pct=Math.min(100, Math.round((toNumber(g.balance||0)/Math.max(1,toNumber(g.target||0)))*100));
           const li=document.createElement('li');
           li.className='card p-3';
-          li.innerHTML=`<div class="flex items-center justify-between mb-1"><div class="font-medium">${esc(g.name)}</div><div class="text-sm">${ils(g.balance||0)} / ${ils(g.target||0)} · ${pct}%</div></div><div class="progress"><div style="width:${pct}%"></div></div>`;
+          li.innerHTML=`<div class="flex items-center justify-between mb-1"><div class="font-medium">${esc(g.name)}</div><div class="text-sm">${ils(g.balance||0)} / ${ils(g.target||0)} · ${pct}%</div></div><div class="progress ${pct>100?'danger':pct>90?'warn':''}"><div style="width:${pct}%"></div></div>`;
           goalList.appendChild(li);
         });
       }
@@ -636,15 +797,7 @@
       document.getElementById('netSum').textContent    = ils(t.net);
       document.getElementById('totalBudget').textContent = ils(S().totalBudget);
 
-      // include fixed for current month
-      const fixedThisMonth = S().recurring.filter(r=>{
-        const d = new Date(ROOT.current+'-01');
-        const s = new Date(r.start);
-        const u = r.until ? new Date(r.until) : null;
-        return s <= d && (!u || u >= d);
-      }).reduce((s,r)=> s + toNumber(r.amount||0), 0);
-
-      const spent = t.exp + fixedThisMonth;
+      const spent = t.exp; // כולל משתנות + קבועות ממומשות
       const monthlySurplus = t.net - spent;
       document.getElementById('kpiSavings').textContent = ils(monthlySurplus);
       document.getElementById('kpiCurExp').textContent  = ils(t.exp);
@@ -657,6 +810,8 @@
     function renderAll(){
       buildMonthStrip();
       initCategorySelects();
+      initCategoryFilters();
+      initFixedGroupSelect();
       syncTodayInputs();
       renderHeaderAndGauge();
       renderIncomeList();
@@ -702,6 +857,13 @@
 
     /* ========= EDIT ========= */
     function openEdit(id){
+      if(String(id).startsWith('rec-')){
+        // synthetic row – לא נערך כאן
+        document.querySelector('.seg [data-view="expenses"]').click();
+        document.querySelector('#view-expenses .seg [data-subview="exp-fixed"]').click();
+        toast('עריכת חיוב קבוע נעשית בלשונית "קבועות".');
+        return;
+      }
       const t = S().transactions.find(x=> x.id===id); if(!t) return;
       document.getElementById('editId').value = t.id;
       document.getElementById('editType').value = t.type;
@@ -728,8 +890,38 @@
       saveRoot(); renderAll(); toast('עודכן'); toggleModal(false);
     }
     function deleteRow(id){
-      const idx = S().transactions.findIndex(x=> x.id===id); if(idx<0) return;
+      const idx = S().transactions.findIndex(x=> x.id===id);
+      if(idx<0) return;
       S().transactions.splice(idx,1); saveRoot(); renderAll(); toast('נמחק'); toggleModal(false);
+    }
+
+    /* ========= FIXED (Recurring) FORM ========= */
+    function initFixedGroupSelect(){
+      const sel=document.getElementById('fixGroup');
+      if(!sel || sel.dataset.inited) return;
+      FIXED_GROUPS.forEach(g=>{ const o=document.createElement('option'); o.value=g; o.textContent=g; sel.appendChild(o); });
+      sel.dataset.inited='1';
+    }
+    function editFixedPrefill(id){
+      const r = S().recurring.find(x=>x.id===id); if(!r) return;
+      document.getElementById('fixId').value = r.id;
+      document.getElementById('fixGroup').value = r.group;
+      document.getElementById('fixLabel').value = r.label || '';
+      document.getElementById('fixAmount').value = r.amount;
+      document.getElementById('fixStart').value = toInputDate(r.start);
+      document.getElementById('fixUntil').value = r.until ? toInputDate(r.until) : '';
+      document.getElementById('fixPayday').value = r.payday || 1;
+      document.querySelector('#view-expenses .seg [data-subview="exp-fixed"]').click();
+      toast('עריכת חיוב קבוע בטופס למעלה');
+    }
+    function resetFixedForm(){
+      document.getElementById('fixId').value='';
+      document.getElementById('fixGroup').selectedIndex=0;
+      document.getElementById('fixLabel').value='';
+      document.getElementById('fixAmount').value='';
+      // fixStart מתמלא ב-syncTodayInputs
+      document.getElementById('fixUntil').value='';
+      document.getElementById('fixPayday').value='';
     }
 
     /* ========= EVENTS ========= */
@@ -812,28 +1004,34 @@
       });
       f.reset(); updateCatBadge();
     });
-    // filters
-    ['filterText','filterCat','filterFrom','filterTo','sortBy'].forEach(id=>{
+
+    // filters & toggles
+    ['filterText','filterCat','filterFrom','filterTo','sortBy','toggleFixedInList'].forEach(id=>{
       const el=document.getElementById(id); if(!el) return;
       el.addEventListener('input', renderExpensesList);
       el.addEventListener('change', renderExpensesList);
     });
-    // cat badge on change
-    document.getElementById('catSelect')?.addEventListener('change', updateCatBadge);
 
     // fixed add/update
     document.getElementById('formFixedAdd')?.addEventListener('submit', e=>{
       e.preventDefault();
-      const name=document.getElementById('fixName').value;
+      const id = document.getElementById('fixId').value || uuid();
+      const group=document.getElementById('fixGroup').value;
+      const label=(document.getElementById('fixLabel').value||'').trim();
       const amount=toNumber(document.getElementById('fixAmount').value);
       const start=document.getElementById('fixStart').value || (ROOT.current+'-01');
       const until=document.getElementById('fixUntil').value || null;
-      if(!name || !amount){ toast('שם וסכום נדרשים'); return; }
-      const ex=S().recurring.find(r=>r.name===name);
-      if(ex){ ex.amount=amount; ex.start=new Date(start).toISOString(); ex.until=until? new Date(until).toISOString():null; }
-      else { S().recurring.push({id:uuid(), name, amount, start:new Date(start).toISOString(), until:until? new Date(until).toISOString():null}); }
-      saveRoot(); renderAll(); toast('עודכן חיוב קבוע'); e.currentTarget.reset();
+      const payday = Number(document.getElementById('fixPayday').value)||1;
+      if(!group || !amount){ toast('קבוצה וסכום נדרשים'); return; }
+
+      const exIndex = S().recurring.findIndex(r=>r.id===id);
+      const rec = {id, group, label, amount, start:new Date(start).toISOString(), until:until? new Date(until).toISOString():null, payday};
+      if(exIndex>-1){ S().recurring[exIndex]=rec; toast('חיוב קבוע עודכן'); }
+      else { S().recurring.push(rec); toast('חיוב קבוע נוסף'); }
+
+      saveRoot(); renderAll(); resetFixedForm();
     });
+    document.getElementById('fixReset')?.addEventListener('click', resetFixedForm);
 
     // pension form
     document.getElementById('formPensionAdd')?.addEventListener('submit', e=>{
@@ -893,7 +1091,7 @@
     document.getElementById('quickAddRecurring')?.addEventListener('click', ()=>{
       document.querySelector('.seg [data-view="expenses"]').click();
       document.querySelector('#view-expenses .seg [data-subview="exp-fixed"]').click();
-      document.getElementById('fixName').focus();
+      document.getElementById('fixGroup').focus();
     });
 
     // edit modal events
@@ -917,7 +1115,7 @@
     function initCategoryFilters(){
       const selFilter = document.getElementById('filterCat');
       if(!selFilter || selFilter.dataset.initedFilter) return;
-      ["כל הקטגוריות", ...VARIABLE].forEach((c,i)=>{
+      ["כל הקטגוריות", ...VARIABLE, ...FIXED_GROUPS].forEach((c,i)=>{
         const o=document.createElement('option'); o.value=i?c:''; o.textContent=c; selFilter.appendChild(o);
       });
       selFilter.dataset.initedFilter='1';
@@ -926,6 +1124,7 @@
     function initUI(){
       initCategorySelects();
       initCategoryFilters();
+      initFixedGroupSelect();
       buildMonthStrip();
       syncTodayInputs();
       renderAll();
